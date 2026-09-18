@@ -1,0 +1,12 @@
+source_library,spectra,share,structures,redistribution
+enveda-180,1153785,0.4543,182941,in-house (not redistributable)
+pluskal_ms2,527581,0.2077,46821,likely public
+riken,347171,0.1367,15892,likely public
+gnps,220849,0.0870,45750,open (CC)
+massbank,101727,0.0401,9180,open (CC)
+mona,92416,0.0364,11681,"open (CC, per-record)"
+spectraverse,50933,0.0201,9631,unverified
+msdial,40765,0.0161,9127,likely public
+drug_plus,2545,0.0010,2539,unverified
+enveda-np-examples,1184,0.0005,250,in-house (not redistributable)
+masaryk,652,0.0003,416,likely public
