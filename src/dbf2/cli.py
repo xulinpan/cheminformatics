@@ -23,7 +23,7 @@ from .config import Config
 
 def cmd_prepare(a) -> None:
     from .prepare import run
-    cfg = Config(); cfg.paths.root = a.root
+    cfg = Config(paths=Config.paths_for(a.dataset, a.root))
     if a.max_peaks is not None:
         cfg.data.max_peaks = a.max_peaks
     if a.max_row_groups:
@@ -33,7 +33,7 @@ def cmd_prepare(a) -> None:
 
 def cmd_oracle(a) -> None:
     from .prepare import build_oracle_key
-    cfg = Config(); cfg.paths.root = a.root
+    cfg = Config(paths=Config.paths_for(a.dataset, a.root))
     key = build_oracle_key(cfg)
     print(key.head().to_string())
     print(f"\nwrote {cfg.paths.oracle}")
@@ -84,7 +84,7 @@ def cmd_predict(a) -> None:
 
 def cmd_descriptors(a) -> None:
     from .candidate_descriptors import run
-    cfg = Config(); cfg.paths.root = a.root
+    cfg = Config(paths=Config.paths_for(a.dataset, a.root))
     run(cfg, a.library, a.budget)
 
 
