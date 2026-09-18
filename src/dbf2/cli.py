@@ -3,7 +3,9 @@
     python -m dbf2 prepare  --root . --budget 600      # resumable: rerun to continue
     python -m dbf2 train    --root . --rung M2 --epochs 20
     python -m dbf2 bayes    --root . --run dbf2_runs/M2
-    python -m dbf2 ablate   --root . --rungs M0 M1 M2 --epochs 10
+    python -m dbf2 ablate   --root . --rungs M0 M1R M1 M2 --epochs 15
+    python -m dbf2 ablate   --root . --seed 7                 # replicate at another seed
+    python -m dbf2 train    --root . --rung M1 --quantise 0.1 --tag W0.1   # bin-width sweep
     python -m dbf2 descriptors --root . --library processed_v2/molecules.parquet
     python -m dbf2 predict  --root . --run dbf2_runs/M2 --budget 150
     python -m dbf2 oracle   --root .
@@ -37,14 +39,25 @@ def cmd_oracle(a) -> None:
           "honestly. It must not be used to produce a competition submission.")
 
 
-def cmd_train(a) -> None:
-    from .train import train
-    cfg = Config.ablation(a.rung, a.root)
+def _apply_overrides(cfg, a) -> None:
+    """Command-line overrides shared by train and ablate."""
     if a.epochs: cfg.train.epochs = a.epochs
     if a.batch: cfg.train.batch_molecules = a.batch
     if a.views: cfg.train.views_per_molecule = a.views
-    if a.max_peaks is not None: cfg.data.max_peaks = a.max_peaks
+    if getattr(a, "max_peaks", None) is not None: cfg.data.max_peaks = a.max_peaks
     if a.limit_molecules: cfg.train.limit_molecules = a.limit_molecules
+    if getattr(a, "seed", None) is not None:
+        cfg.train.seed = a.seed
+    if getattr(a, "quantise", None) is not None:
+        # sweep the mass axis: 0 restores full precision, any positive width
+        # snaps peaks to that grid and merges the collisions
+        cfg.model.quantise_mz = a.quantise
+
+
+def cmd_train(a) -> None:
+    from .train import train
+    cfg = Config.ablation(a.rung, a.root)
+    _apply_overrides(cfg, a)
     tag = a.tag or a.rung
     out = cfg.paths.runs / tag
     cfg.to_json(out / "config.json")
@@ -78,20 +91,19 @@ def cmd_ablate(a) -> None:
     results = {}
     for rung in a.rungs:
         cfg = Config.ablation(rung, a.root)
-        if a.epochs: cfg.train.epochs = a.epochs
-        if a.batch: cfg.train.batch_molecules = a.batch
-        if a.views: cfg.train.views_per_molecule = a.views
-        if a.limit_molecules: cfg.train.limit_molecules = a.limit_molecules
-        out = cfg.paths.runs / rung
+        _apply_overrides(cfg, a)
+        tag = rung if a.seed is None else f"{rung}_s{a.seed}"
+        out = cfg.paths.runs / tag
         cfg.to_json(out / "config.json")
-        results[rung] = train(cfg, out, rung)
-    path = Path(a.root) / "dbf2_runs" / "ablation_summary.json"
+        results[tag] = train(cfg, out, tag)
+    name = "ablation_summary.json" if a.seed is None else f"ablation_summary_s{a.seed}.json"
+    path = Path(a.root) / "dbf2_runs" / name
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(results, indent=2), encoding="utf-8")
     print("\n=== ABLATION SUMMARY ===")
     for rung, r in results.items():
         t = r.get("test", {})
-        print(f"{rung}: encoder={r['encoder']:8s} pooling={r['pooling']:12s} "
+        print(f"{rung:8s}: encoder={r['encoder']:8s} pooling={r['pooling']:12s} "
               f"macro_auprc={t.get('macro_auprc', float('nan')):.4f} "
               f"ece={t.get('ece', float('nan')):.4f}")
     print(f"\nwrote {path}")
@@ -125,6 +137,11 @@ def main() -> None:
     p.add_argument("--limit-molecules", type=int, default=None,
                    help="cap each split; for smoke tests")
     p.add_argument("--tag", default=None)
+    p.add_argument("--seed", type=int, default=None,
+                   help="training seed; vary it to measure run-to-run spread")
+    p.add_argument("--quantise", type=float, default=None,
+                   help="snap peak m/z to this grid in Da and merge collisions; "
+                        "0 keeps full precision. Sweep it to price precision.")
 
     p = sub.add_parser("bayes", parents=[common]); p.set_defaults(fn=cmd_bayes)
     p.add_argument("--run", type=Path, required=True)
@@ -144,6 +161,9 @@ def main() -> None:
 
     p = sub.add_parser("ablate", parents=[common]); p.set_defaults(fn=cmd_ablate)
     p.add_argument("--rungs", nargs="+", default=["M0", "M1", "M1R", "M2"])
+    p.add_argument("--seed", type=int, default=None,
+                   help="training seed; runs are tagged <rung>_s<seed>")
+    p.add_argument("--quantise", type=float, default=None)
     p.add_argument("--epochs", type=int, default=None)
     p.add_argument("--batch", type=int, default=None)
     p.add_argument("--views", type=int, default=None)
