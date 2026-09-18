@@ -24,7 +24,7 @@ NAME = {"M1R-M0": "encoder", "M1-M1R": "mass axis", "M2-M1": "aggregation",
 t2 = pd.DataFrame([{
     "contrast": k.replace("-", " $-$ "), "isolates": NAME[k],
     "$\\Delta$ AUPRC": f"{A['paired'][k]['mean']:+.4f}",
-    "95\\% CI": f"[{A['paired'][k]['lo']:+.4f}, {A['paired'][k]['hi']:+.4f}]",
+    "95% CI": f"[{A['paired'][k]['lo']:+.4f}, {A['paired'][k]['hi']:+.4f}]",
     "targets improved": f"{A['paired'][k]['frac_improved']:.1%}",
     "SD over seeds": (f"{A['effects'][NAME[k]]['sd']:.4f}" if NAME[k] in A["effects"] else "--"),
 } for k in ["M1R-M0", "M1-M1R", "M2-M1", "M1-M0", "M2-M0"]])
