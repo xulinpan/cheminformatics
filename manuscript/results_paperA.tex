@@ -153,19 +153,3 @@ fraction of peaks absorbed into an already-occupied bin, by mass range; the dash
 line marks the overall $37.5\%$.}
 \label{fig:representation}
 \end{figure}
-
-\hd{Threats to validity}
-Three limits bound what we claim. The experiments use two of twenty-one corpus row
-groups, approximately a tenth of the available data; we expect the ordering to hold
-at scale but the absolute values will move. Three seeds per arm is enough to
-establish that the encoder effect is the largest and that both components are
-non-zero, and not enough to rank the mass axis against aggregation. And the sweep
-carries one run per width, so its middle is unresolved; only its endpoints, which
-are separated by several seed standard deviations, should be read as findings.
-
-We also note what the design does not control. M1R gives the binned mass axis the
-better encoder, which is the comparison that isolates precision, but it does not
-give the binned \emph{vector} that encoder --- a Transformer over bin-indexed
-tokens is not the same object as a perceptron over a dense vector, and some of what
-we attribute to the encoder may be the switch from a dense to a sparse
-representation of the same information. Separating those would need a fifth arm.

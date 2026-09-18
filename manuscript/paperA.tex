@@ -1,7 +1,9 @@
 % Paper A --- Journal of Cheminformatics research article.
-% Structure follows Wang et al. J Cheminform (2024) 16:125: Abstract,
-% Scientific contribution, Keywords, Introduction, Methods, Results,
-% Discussion, Conclusion, declarations, numbered references.
+% Structure follows the journal's Research article guidelines: Abstract with an
+% embedded Scientific contribution statement, Keywords, Introduction, Methods,
+% Results, Discussion, Conclusion, declarations, numbered references.
+% Results are kept in results_paperA.tex so the text and the analysis that
+% generates its numbers stay in one place.
 \documentclass[11pt]{article}
 
 \usepackage[margin=1in]{geometry}
@@ -20,9 +22,9 @@
 
 \newcommand{\hd}[1]{\medskip\par\noindent\textbf{#1}\par\nobreak\vspace{2pt}\noindent\ignorespaces}
 
-\title{\vspace{-2em}\bfseries Full-precision peak representations outperform binned
-spectra for substructure prediction from tandem mass spectra}
-\author{Xulin Pan\textsuperscript{1}\thanks{Correspondence: \texttt{xxp5066@psu.edu}}
+\title{\vspace{-2em}\bfseries Most of the advantage of peak-level tandem mass
+spectra is the encoder, not the mass axis}
+\author{Xulin Pan\textsuperscript{1}\thanks{Correspondence: \texttt{xulinpanias@gmail.com}}
 \quad Chuanming Wang\textsuperscript{2}\\[4pt]
 \small \textsuperscript{1}The Pennsylvania State University, University Park, PA, USA\\
 \small \textsuperscript{2}School of Biological and Food Engineering, Honghe University, Mengzi, China}
@@ -33,109 +35,113 @@ spectra for substructure prediction from tandem mass spectra}
 
 \subsection*{Abstract}
 \small
-Machine-learning methods for tandem mass spectrometry (MS/MS) almost always consume
-the spectrum as a fixed-width binned intensity vector, a representation inherited
-from spectral library search. Binning is rarely treated as a modelling decision and
-its cost has not been measured. Here we price it directly. Using the CASMI 2026
-corpus we trained two models that differ only in how the spectrum enters: a
-$0.5$~Da binned vector, and a set of peaks whose $m/z$ is retained at full
-precision and embedded with an explicit mass-defect channel. Data, structural
-targets, optimiser, training budget and evaluation were held fixed, and the binned
-model was given $63\%$ more parameters. On $8{,}692$ held-out molecules the
-peak-set representation raised macro AUPRC from $0.0476$ to $0.1119$ against a
-chance level of $0.0093$, a paired per-target gain of $+0.0644$ ($95\%$ CI
-$+0.0570$ to $+0.0722$) that improved $89.7\%$ of targets individually. The
-representation change was more than twice the size of an architectural change
-(hierarchical multi-view pooling) measured on the same data. Binning at $0.5$~Da
-absorbs $37.5\%$ of the test peaks a model actually receives into bins already
-occupied by another
-peak, spans $1{,}667$~ppm at $m/z\,300$ on an instrument delivering about $5$~ppm,
-and pools hundreds of candidate fragment compositions into one coordinate. We
-conclude that a binned baseline is no longer an adequate control for MS/MS
-structure annotation. Code and configurations are available at
+Machine-learning methods for tandem mass spectrometry (MS/MS) have been moving away
+from fixed-width binned intensity vectors towards models that read peaks at full
+precision, and the resulting gains are commonly attributed to the spectral
+representation. That attribution has never been tested, because abandoning bins
+normally forces an architecture change at the same time: a peak set cannot be read
+by the network that reads a binned vector. Here we separate them. We introduce a
+rounding control that snaps each peak to its bin centre, merges the peaks that
+collide, and passes the result through the \emph{identical} peak-set Transformer at
+an identical parameter count, so the encoder changes with the mass axis held
+constant and the mass axis changes with the encoder held constant. On the CASMI
+2026 corpus, over 8,692 held-out molecules and three training seeds, replacing a
+$0.5$~Da binned baseline with a full-precision peak-set model raised macro AUPRC
+from $0.0478$ to $0.1122$ against a chance level of $0.0093$. The control splits
+the paired gain of $+0.0645$ into $+0.0377$ ($95\%$ CI $+0.0331$ to $+0.0424$) for the encoder
+and $+0.0268$ ($+0.0221$ to $+0.0317$) for the mass axis: $58\%$ of the gain is
+architectural. A bin-width sweep at fixed encoder shows mass precision paying only
+below $0.05$~Da, with $0.5$, $0.25$ and $0.1$~Da mutually indistinguishable.
+Improvements measured against binned baselines should therefore not be read as
+evidence about spectral representation. Code:
 \url{https://github.com/xulinpan/cheminformatics}.
 \normalsize
 
 \hd{Scientific contribution}
 \small
-We provide the first controlled price for the spectral input representation in
-MS/MS substructure prediction, isolating it from architecture, capacity and
-training budget, and granting the weaker representation the larger parameter count.
-The measured effect exceeds that of the architectural component built on top of it
-by a factor of two, and we quantify the mechanism by which binning destroys
-information: $37.5\%$ of the peaks a model receives are absorbed into shared bins, discarding
-the mass defect that distinguishes isobaric fragment compositions. The practical
-consequence is a change in what counts as an adequate control in this field.
+We introduce a rounding control that isolates the spectral representation from the
+encoder in MS/MS substructure prediction, an isolation no previous comparison
+achieves because changing the representation ordinarily forces an architecture
+change. Applying it across three seeds shows that the encoder accounts for $58\%$
+of the gain a two-arm comparison credits to the representation and is the largest
+of the three effects we measure, while a bin-width sweep at fixed encoder locates
+the value of mass precision below $0.05$~Da. The consequence for practice is that
+performance measured against a binned baseline confounds representation with
+architecture and cannot support claims about either alone.
 \normalsize
 
 \hd{Keywords}
 \small
 Tandem mass spectrometry, Structure annotation, Spectral representation, Mass
-defect, Substructure prediction, Metabolite identification
+defect, Substructure prediction, Ablation study
 \normalsize
 
 \section*{Introduction}
 
 Assigning a chemical structure to an MS/MS spectrum is the rate-limiting step in
-untargeted metabolomics. Where the molecule is present in a reference library the
+untargeted metabolomics. Where the molecule appears in a reference library the
 problem reduces to spectral matching, but most spectra acquired from biological
-extracts are not \cite{duhrkop2021cosmic}. For the remainder, computational
-annotation proceeds by relating the spectrum to candidate structures: by in-silico
-fragmentation and scoring, as in MetFrag \cite{ruttkies2016metfrag}; by predicting
-a molecular fingerprint and searching a structure database, as in CSI:FingerID
+extracts do not \cite{hoffmann2022cosmic}. For the remainder, computational
+annotation relates the spectrum to candidate structures: by in-silico fragmentation
+and scoring, as in MetFrag \cite{ruttkies2016metfrag}; by predicting a molecular
+fingerprint and searching a structure database, as in CSI:FingerID
 \cite{duhrkop2015csifingerid} and MIST \cite{goldman2023mist}; or by learning a
 spectrum representation whose geometry reflects chemical similarity, as in
 MS2DeepScore \cite{huber2021ms2deepscore} and DreaMS \cite{bushuiev2025dreams}.
 
-Nearly all of these systems begin from the same input object. The spectrum, which is
-physically a sparse list of $(m/z, \text{intensity})$ pairs, is discretised onto a
-fixed grid of bins, typically $0.01$ to $1$~Da wide, and handed to the model as a
-dense vector. The convention is so widespread that it is seldom stated as a choice.
+For most of the past decade these systems took the same input object. The spectrum,
+physically a sparse list of $(m/z, \text{intensity})$ pairs, was discretised onto a
+fixed grid of bins and handed to the model as a dense vector. The convention came
+from spectral library search, where a bin comfortably wider than the instrument's
+mass error makes cosine matching robust to calibration drift between laboratories.
+A $0.5$~Da bin spans roughly $1{,}700$~ppm at $m/z\,300$ while a modern
+time-of-flight instrument delivers about $5$~ppm, so everything the instrument
+resolves inside that window is discarded --- including the mass defect, the
+difference between a fragment's exact and nominal mass, which distinguishes
+$\mathrm{C_5H_7^+}$ ($67.0542$) from $\mathrm{C_4H_3O^+}$ ($67.0178$) and therefore
+carries elemental composition.
 
-Its origin lies in library search. Cosine similarity between two binned vectors is
-inexpensive, and a bin comfortably wider than the instrument's mass error makes
-matching robust to calibration drift between two laboratories. Those are appropriate
-properties for comparing two measurements of the same compound. They are not
-obviously appropriate for inferring an unknown structure, and the two problems have
-been treated as though a single representation serves both. A $0.5$~Da bin spans
-roughly $1{,}700$~ppm at $m/z\,300$ while a modern time-of-flight instrument
-delivers on the order of $5$~ppm; everything the instrument resolves within that
-window is discarded. What is discarded is not noise. The mass defect, the difference
-between a fragment's exact mass and its nominal mass, is the quantity that
-distinguishes $\mathrm{C_5H_7^+}$ ($67.0542$) from $\mathrm{C_4H_3O^+}$ ($67.0178$),
-and therefore the quantity that carries elemental composition.
+The field has since moved away from naive binning. CSI:FingerID scores against
+fragmentation trees over exact masses, MIST tokenises peaks by chemical formula,
+DreaMS operates on peak lists, and TransExION aligns fragments by nominal mass with
+the defect embedded as a separate channel \cite{buithi2024transexion}. These
+systems outperform binned baselines, and the improvement is routinely read as
+evidence that the representation was the problem.
 
-Parts of the field have moved away from naive binning. CSI:FingerID scores against
-fragmentation trees built from exact masses, MIST tokenises peaks by chemical
-formula, DreaMS operates on peak lists, and TransExION explicitly separates nominal
-mass from an embedded mass defect when aligning fragments between spectra
-\cite{buithi2024transexion}. These are strong systems, and each differs from a
-binned baseline in architecture, training data and objective simultaneously. None
-of them isolates the representation, so the field has no estimate of what the choice
-is worth on its own, and binned baselines continue to appear as controls in new work.
+That reading does not follow from the experiments, and the reason is structural
+rather than careless. A binned vector and a peak set are different kinds of object:
+the first is dense and fixed-length, the second sparse and variable-length and
+permutation-invariant. No architecture reads both. Abandoning bins therefore forces
+a change of encoder, and every published comparison of a peak-level model against a
+binned baseline varies the representation and the architecture together, usually
+alongside differences in training data and objective. The two contributions have
+never been separated, so the field's estimate of what the representation is worth
+rests on experiments that cannot supply one.
 
-This paper supplies that estimate. We train two models that differ in exactly one
-respect --- whether the spectrum is discretised --- while holding the corpus,
-structural targets, splits, optimiser, schedule and evaluation fixed, and we give
-the binned model the larger parameter budget so that any deficit cannot be
-attributed to capacity. We report the effect size with paired intervals over
-targets, quantify the information binning removes, and compare the result against an
-architectural change measured under the same protocol.
+This paper supplies the separation. The obstacle above is real but not
+insurmountable: while a peak-set encoder cannot read a binned vector, it can read
+peaks whose $m/z$ has been \emph{rounded to the bin grid}. Quantising the mass axis
+while leaving the peak-set interface intact yields an arm that carries the
+baseline's mass information through the treatment's architecture, and inserting it
+between the two turns a confounded two-arm comparison into a decomposition. We
+report that decomposition across three training seeds, extend it with a bin-width
+sweep that prices precision as a continuous quantity, and examine what the results
+imply for how baselines in this area should be constructed and read.
 
 \section*{Methods}
 
 \hd{Corpus and splits}
-We used the CASMI 2026 training corpus, an aggregation of eleven public and
-in-house MS/MS libraries. All experiments here use a fixed subset of two of its
-twenty-one Parquet row groups: $262{,}041$ spectra over $43{,}536$ distinct
-structures, comprising $15{,}299{,}995$ peaks after cleaning. Spectra were retained
-if the precursor $m/z$ was below $2{,}000$ and the reported precursor error was
-within $20$~ppm; peaks were retained above $0.1\%$ of the base peak and below the
-precursor plus $1.5$~Da, capped at the $256$ most intense, and $m/z$ values were
-kept in double precision throughout preprocessing.
+We used the CASMI 2026 training corpus, an aggregation of eleven public and in-house
+MS/MS libraries. All experiments use a fixed subset of two of its twenty-one Parquet
+row groups: $262{,}041$ spectra over $43{,}536$ distinct structures, comprising
+$15{,}299{,}995$ peaks after cleaning. Spectra were retained if the precursor $m/z$
+was below $2{,}000$ and the reported precursor error within $20$~ppm; peaks were
+retained above $0.1\%$ of the base peak and below the precursor plus $1.5$~Da,
+capped at the $256$ most intense, with $m/z$ held in double precision throughout
+preprocessing.
 
 Structures were assigned to five folds by grouping generic Murcko scaffolds, with
-acyclic structures falling back to grouping by their own identifier. Fold sizes were
+acyclic structures falling back to grouping by their own identifier, and fold sizes
 balanced greedily ($8{,}707$ to $8{,}708$ molecules). Folds 2--4 were used for
 fitting, fold 1 for model selection, and fold 0 was held out; all reported numbers
 are on fold 0 ($8{,}692$ molecules).
@@ -143,244 +149,213 @@ are on fold 0 ($8{,}692$ molecules).
 \hd{Structural targets}
 Each structure was decomposed with BRICS and represented by the presence or absence
 of each of the $512$ most frequent attachment-labelled fragments, the vocabulary
-being fitted on the training folds alone. The resulting target matrix is $97.1\%$
-zero, with a median of $17$ positive targets per molecule. On the held-out fold
-$477$ targets carry at least five positives, at a mean prevalence of $0.0093$; that
-prevalence is the chance level for macro AUPRC. Because $475$ of $600$ candidate
-targets fall below $1\%$ prevalence, we report AUPRC as the primary metric and AUROC
-only as a secondary summary.
+fitted on the training folds alone. The target matrix is $97.1\%$ zero, with a
+median of $17$ positive targets per molecule. On the held-out fold $477$ targets
+carry at least five positives, at a mean prevalence of $0.0093$; that prevalence is
+the chance level for macro AUPRC. Because $475$ of $600$ candidate targets fall
+below $1\%$ prevalence, we report AUPRC as the primary metric and AUROC only as a
+secondary summary.
 
-\hd{Representation A: binned vector (control)}
-Each spectrum was projected onto $2{,}048$ fragment bins and $2{,}048$
-precursor-minus-fragment bins of width $0.5$~Da over $[0, 1024)$, with square-root
-intensity accumulated into each bin and the concatenated vector $L_2$-normalised.
-The $4{,}096$-dimensional vector was encoded by a two-layer perceptron. This is the
-representation used, with minor variation in bin width, throughout the MS/MS
-machine-learning literature.
+\hd{The four arms}
+The design is a ladder in which each arm differs from the one below it in exactly
+one respect.
 
-\hd{Representation B: full-precision peak set}
-Each peak was encoded as a token without discretisation. For a peak at $m/z$ $m$ in
-a spectrum with precursor $m^{\mathrm{prec}}$ we formed a multi-scale sinusoidal
-embedding
+\emph{M0, the conventional baseline.} Each spectrum is projected onto $2{,}048$
+fragment bins and $2{,}048$ precursor-minus-fragment bins of width $0.5$~Da over
+$[0, 1024)$, with square-root intensity accumulated into each bin and the
+concatenated vector $L_2$-normalised. The $4{,}096$-dimensional vector is encoded by
+a two-layer perceptron. This is the representation used, with minor variation in bin
+width, throughout the MS/MS machine-learning literature.
+
+\emph{M1R, the rounding control.} Each peak's $m/z$ is assigned to a cell by
+$\lfloor m/w \rfloor$ with $w = 0.5$~Da --- the same indexing M0's encoder uses ---
+and placed at that cell's centre. Peaks sharing a cell are merged by accumulating
+square-root intensity, the accumulator M0 applies, so the merged peak carries the
+total M0 would have seen. The resulting tokens pass through the peak-set encoder
+described below. The arm therefore holds mass information at M0's resolution while
+using M1's architecture.
+
+One detail is load-bearing. The encoder derives the neutral loss as
+$m^{\mathrm{prec}} - m$. Quantising the peaks while leaving the precursor at full
+precision would return the precursor's mass defect to every token through that
+subtraction, silently defeating the control, so the precursor is snapped to the same
+grid whenever quantisation is active. A unit test asserts that two precursors in one
+cell give identical embeddings under the control and different embeddings without
+it.
+
+\emph{M1, full precision.} Identical to M1R with quantisation disabled, so peaks
+reach the encoder at the precision the instrument reported. M1R and M1 are identical
+in every other configuration field and have identical parameter counts
+($712{,}336$); a test asserts both.
+
+\emph{M2, hierarchical aggregation.} Identical to M1 except that mean pooling over
+a molecule's spectra is replaced by a measurement model weighting each spectrum by a
+learned, acquisition-dependent precision. This arm is included to give the other two
+effects a scale, not as a contribution of this paper.
+
+\hd{Peak encoding}
+Each peak is encoded as a token. For a peak at $m/z$ $m$ in a spectrum with
+precursor $m^{\mathrm{prec}}$ we form a multi-scale sinusoidal embedding
 \begin{equation}
 \varphi_L(m) = \bigl[\sin(2\pi m/\lambda_1), \cos(2\pi m/\lambda_1), \dots,
 \sin(2\pi m/\lambda_L), \cos(2\pi m/\lambda_L)\bigr]^{\top},
 \label{eq:fourier}
 \end{equation}
 with $L = 32$ wavelengths spaced geometrically from $2$~mDa to $10^{3}$~Da, applied
-both to $m$ and to the neutral loss $m^{\mathrm{prec}} - m$. Short wavelengths
-resolve the mass defect and long wavelengths carry nominal mass. The token also
-received the explicit defect $\delta = m - \mathrm{round}(m)$, square-root and
-log-transformed intensity, and intensity rank.
+both to $m$ and to the neutral loss. Short wavelengths resolve the mass defect and
+long wavelengths carry nominal mass. The token also receives the explicit defect
+$\delta = m - \mathrm{round}(m)$, square-root and log-transformed intensity, and
+intensity rank.
 
-One numerical detail is essential rather than incidental. At a wavelength of
-$2$~mDa and $m/z\,342$ the phase in Eq.~\eqref{eq:fourier} exceeds $10^{6}$, and
-evaluating it in single precision destroys exactly the low-order information the
-embedding exists to preserve. We therefore compute the phase in double precision and
-reduce it modulo $2\pi$ before casting. With this reduction the embeddings of
-$\mathrm{C_4H_3O^+}$ and $\mathrm{C_5H_7^+}$, which share a $0.5$~Da bin, differ by
-$1.82$ in the infinity norm, and two peaks $1$~mDa apart at $m/z\,342$ remain
-distinguishable.
+At a wavelength of $2$~mDa and $m/z\,342$ the phase in Eq.~\eqref{eq:fourier}
+exceeds $10^{6}$, and evaluating it in single precision destroys exactly the
+low-order information the embedding exists to preserve. We therefore compute the
+phase in double precision and reduce it modulo $2\pi$ before casting. With this
+reduction the embeddings of $\mathrm{C_4H_3O^+}$ and $\mathrm{C_5H_7^+}$, which
+share a $0.5$~Da bin, differ by $1.82$ in the infinity norm.
 
-Tokens were encoded by a four-block Transformer over the peak set with a learned
-pooling token, each block conditioned on the acquisition covariates (adduct,
-polarity, instrument family, harmonised collision energy) by adaptive layer
-normalisation. The encoder is permutation invariant and accepts variable peak
-counts.
+Tokens are encoded by a four-block Transformer with a learned pooling token, each
+block conditioned on the acquisition covariates (adduct, polarity, instrument
+family, harmonised collision energy) by adaptive layer normalisation. The encoder is
+permutation invariant and accepts variable peak counts.
+
+\hd{Bin-width sweep}
+To price precision as a continuous quantity rather than at one grid, we repeated the
+M1R construction at $w \in \{0.25, 0.1, 0.05, 0.01\}$~Da, with the encoder,
+parameter count, schedule and seed fixed. Together with $w = 0.5$ (M1R) and full
+precision (M1) this gives six points differing only in how finely the mass axis is
+resolved.
 
 \hd{Training protocol}
-Both models were trained for fifteen epochs with the AdamW optimiser, a one-cycle
-schedule with peak learning rate $10^{-3}$, batches of $16$ molecules, mixed
-precision, and gradient clipping at $1.0$. The loss was binary cross-entropy over
-the $512$ presence targets, with an auxiliary negative-binomial term on $88$
-functional-group counts. Checkpoints were selected on validation macro AUPRC. No
-hyperparameter search was performed for either arm. The binned model has
-$1{,}164{,}560$ parameters and the peak-set model $712{,}336$: the control carries
-$63\%$ more capacity than the treatment.
+Every arm was trained for fifteen epochs with AdamW, a one-cycle schedule peaking at
+$10^{-3}$, batches of $16$ molecules, mixed precision and gradient clipping at
+$1.0$. The loss was binary cross-entropy over the $512$ presence targets with an
+auxiliary negative-binomial term on $88$ functional-group counts, and checkpoints
+were selected on validation macro AUPRC. No hyperparameter search was performed for
+any arm. The four ladder arms were each trained three times under seeds
+$\{2026, 7, 13\}$; the sweep arms were trained once each.
 
 \hd{Evaluation}
-We report macro AUPRC over targets with at least five held-out positives, together
-with macro AUROC, micro AUPRC and Brier score. Because the two arms are evaluated on
-identical molecules and identical targets, the appropriate contrast is paired: for
-each target we compute the difference in average precision and bootstrap the mean of
-those differences over targets ($5{,}000$ resamples). We additionally report the
-fraction of targets improved, which is insensitive to a few large per-target swings.
+We report macro AUPRC over targets with at least five held-out positives, with macro
+AUROC, micro AUPRC and Brier score as secondary summaries. Because arms are
+evaluated on identical molecules and identical targets, the appropriate contrast is
+paired: each target's average precision is first averaged over the three seeds, the
+per-target differences are then taken, and their mean is bootstrapped over targets
+($5{,}000$ resamples). We report the fraction of targets improved alongside, and,
+for each effect, its standard deviation across seeds --- which, unlike the bootstrap
+interval, reflects initialisation variance. Where an ordering between effects is at
+issue we check it within each seed rather than reading it off the means.
 
-\section*{Results}
-
-\hd{What binning removes}
-We first quantified the information discarded before any model is fitted
-(Fig.~\ref{fig:representation}). Across the $93{,}611$ peaks of the evaluation
-spectra that survive preprocessing and are therefore seen by both arms,
-$35{,}116$ --- $37.5\%$ --- fall into a $0.5$~Da bin already occupied by
-another peak from the same spectrum and are therefore absorbed. The loss is not
-concentrated in any mass range, running between $29\%$ and $41\%$ across the
-observed $m/z$ window. The observed mass defect spans $[-0.47, +0.47]$~Da and shows
-clear compositional structure, most visibly the discrete combs below $m/z\,150$
-where few elemental compositions are available. Enumerating plausible CHNOS
-compositions within $10$~ppm places $328$ candidate fragment formulas inside a
-single $0.5$~Da bin at $m/z\,300$.
-
-The denominator matters here. The raw test files contain $400{,}707$ peaks, of
-which $60.7\%$ collide under $0.5$~Da binning, but preprocessing removes $76.6\%$
-of those as sub-threshold before either arm is trained. Charging binning for peaks
-no model ever receives would overstate the loss, so we report the absorbed fraction
-over the cleaned spectra throughout.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\linewidth]{figures/fig7_representation.pdf}
-\caption{Information discarded by $0.5$~Da binning. \textbf{Left}: mass defect
-against fragment $m/z$ for the evaluation spectra; the visible structure, including
-the discrete combs at low $m/z$, is what binning removes. \textbf{Right}: fraction
-of peaks absorbed into an already-occupied bin, by mass range; the dashed line marks
-the overall $37.5\%$.}
-\label{fig:representation}
-\end{figure}
-
-\hd{Controlled comparison}
-Replacing the binned vector with the full-precision peak set raised macro AUPRC from
-$0.0476$ to $0.1119$, from $5.1$ to $12.0$ times the chance level of $0.0093$
-(Table~\ref{tab:table2_ablation}, Fig.~\ref{fig:ablation}). Macro AUROC rose from $0.7832$
-to $0.8734$, micro AUPRC from $0.2905$ to $0.3842$, and the Brier score improved
-from $0.00704$ to $0.00653$. The deficit cannot be attributed to capacity, since the
-binned model holds the larger parameter count.
-
-\input{figures/table2_ablation.tex}
-
-The paired per-target contrast gives $+0.0644$ average precision with a $95\%$
-bootstrap interval of $+0.0570$ to $+0.0722$, and $89.7\%$ of individual targets
-improve (Table~\ref{tab:table3_paired_differences}). The interval excludes zero by a
-wide margin and the improvement is broad rather than driven by a small number of
-targets.
-
-\input{figures/table3_paired_differences.tex}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\linewidth]{figures/fig1_ablation.pdf}
-\caption{Controlled comparison on $8{,}692$ held-out molecules. \textbf{Left}: macro
-AUPRC for the binned control (M0), the peak-set model (M1) and a peak-set model with
-hierarchical multi-view pooling (M2), against the chance level. \textbf{Right}:
-paired per-target differences with $95\%$ bootstrap intervals over targets.}
-\label{fig:ablation}
-\end{figure}
-
-\hd{The representation effect exceeds the architectural effect}
-To place the result on a scale, we measured an architectural change under the same
-protocol: replacing mean pooling over a molecule's spectra with a hierarchical
-measurement model that weights each spectrum by a learned, acquisition-dependent
-precision. That change is worth $+0.0341$ average precision ($95\%$ CI $+0.0277$ to
-$+0.0407$), improving $72.3\%$ of targets. The representation change is therefore
-$1.9$ times larger than the architectural change built on top of it, measured on the
-same molecules with the same targets.
-
-\hd{The comparison is not confounded by convergence}
-Both arms plateaued well inside the training budget (Fig.~\ref{fig:training}).
-Validation macro AUPRC for the binned model moved from $0.04504$ at epoch 12 to
-$0.04540$ at epoch 14, and for the peak-set model from $0.10645$ to $0.10670$ over
-the same interval. Neither arm is undertrained relative to the other, and extending
-the schedule would not change the ordering.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.62\linewidth]{figures/fig2_training_curves.pdf}
-\caption{Validation macro AUPRC by epoch. Both arms plateau by epoch 13, so the
-comparison does not depend on unequal convergence.}
-\label{fig:training}
-\end{figure}
+\input{results_paperA.tex}
 
 \section*{Discussion}
 
-The result is a single number with a narrow interval, and its interest lies in what
-it is a number \emph{about}. Discretising the $m/z$ axis is not a preprocessing
-detail on the way to a model; on this corpus it costs more than the model.
+The headline is a reattribution. A two-arm comparison on this corpus credits the
+spectral representation with $+0.0644$ macro AUPRC; once the encoder is held
+constant, the representation's share is $+0.0268$ and the encoder's is $+0.0377$.
+Both are real, and the smaller one is the one the literature has been discussing.
 
-The reason binning persists is worth stating plainly, because it is a good reason
-that has outlived its context. In library search a wide bin buys robustness: two
-laboratories measuring the same compound will not agree to the fourth decimal place,
-and a bin wider than their disagreement makes the match succeed. That argument is
-about tolerance between two measurements. It says nothing about how much
-information a single measurement carries, and structure annotation is an inference
-problem rather than a matching problem. When the same representation was carried
-across, the tolerance argument came with it and the information argument was never
-made.
+It is worth being clear about why this went unnoticed for so long, because the
+answer is not inattention. The confound is forced by the data structures involved.
+A binned vector is dense and fixed-length; a peak set is sparse, variable-length and
+permutation-invariant. There is no architecture that reads both, so an experiment
+that changes only the representation appears impossible, and the comparison everyone
+can run is the one that changes both. The rounding control works not by finding a
+network that reads both objects but by degrading one object into the other while
+keeping the interface fixed --- passing peaks through the peak-set encoder at the
+baseline's resolution. The manoeuvre is simple in retrospect, and we suspect it
+generalises: wherever a representation change forces an architecture change, asking
+whether the richer representation can be impoverished in place is likely to be more
+productive than looking for a universal encoder.
 
-Our finding is consistent with the direction the strongest systems have taken
-independently. CSI:FingerID scores against fragmentation trees over exact masses
-\cite{duhrkop2015csifingerid}, MIST tokenises by chemical formula
-\cite{goldman2023mist}, DreaMS learns from peak lists \cite{bushuiev2025dreams}, and
-TransExION embeds the mass defect as a channel distinct from nominal mass
-\cite{buithi2024transexion}. Each of those systems differs from a binned baseline in
-several respects at once, so none of them prices the representation alone; what we
-add is the controlled estimate, and the observation that it is large.
+Our result does not diminish the systems that abandoned binning. CSI:FingerID, MIST,
+DreaMS and TransExION are better than binned baselines, and this work does not
+dispute it. What it changes is the account of \emph{why}. To the extent that those
+systems differ from a binned baseline in both respects, our decomposition suggests
+the larger part of their advantage comes from the architectures they adopted rather
+than from the mass information they preserved. That is a testable claim about each
+of them, and the control we describe is cheap enough to apply.
 
-The practical consequence is a claim about controls. A new method evaluated against
-a binned baseline inherits a handicap in its comparator that may exceed the effect
-it reports. On the evidence here, a difference of the size typically claimed for an
-architectural contribution can be produced by changing the input representation and
-nothing else. We would suggest that a binned baseline is no longer sufficient, and
-that methods papers in this area report their comparator's representation as
-explicitly as its architecture.
+The sweep sharpens the picture and, in one respect, complicates it. Precision buys
+nothing measurable between $0.5$ and $0.1$~Da; the gain appears below $0.05$~Da and
+is not exhausted even at $0.01$~Da. A $10$~mDa grid separates the isobaric fragments
+that motivate the mass-defect argument, yet still leaves about a third of the
+benefit unrealised, which suggests the model is using the defect as a continuous
+quantity rather than merely as a discriminator between candidate formulas. This sits
+awkwardly with the common design choice, TransExION's included, of embedding the
+defect as a channel alongside a coarsely quantised nominal mass: on our evidence the
+resolution of that channel matters more than its presence. The comparison of the
+absorption and performance curves points the same way. Coarsening from $0.1$ to
+$0.5$~Da removes a tenth of the peaks by merging and costs nothing; refining from
+$0.05$ to $0.01$~Da removes two thirds of the remaining merges and buys $+0.0121$.
+Peak absorption, the most intuitive account of what binning destroys, is therefore
+not sufficient on its own.
+
+The practical consequence concerns controls. A method evaluated against a binned
+baseline is being compared against an arm that is handicapped in two ways at once,
+and on this evidence the larger handicap is architectural. A paper reporting a gain
+over such a baseline has not shown that its representation is responsible, whatever
+its discussion says, and reviewers should not accept that inference. The remedy is
+inexpensive: report the comparator's encoder as explicitly as its representation,
+and where the claim is about representation, include an arm that changes only that.
 
 \hd{Limitations}
-Three limits bound the claim. The experiments use approximately a tenth of the
-available corpus; while we do not expect the ordering to invert, absolute values
-will move with scale. Each arm was trained once, and the reported intervals are
-bootstraps over targets, which capture target-to-target variation but not
-initialisation or run-to-run variance; replication across seeds is required before
-the effect size is treated as settled. And the comparison uses one target family
-(BRICS substructure presence), one instrument family and one bin width; a narrower
-bin would recover part of the loss, and quantifying the effect as a function of bin
-width would sharpen the recommendation. We report the result as a lower bound on
-the cost of a widely used bin width rather than as a characterisation of binning in
-general.
+The experiments use approximately a tenth of the available corpus, and absolute
+values will move with scale even if the ordering does not. Three seeds establish
+that the encoder effect is the largest and that all three components are non-zero,
+but not enough to rank the mass axis against aggregation, and we have declined to do
+so. The sweep is single-seed, so only its endpoints should be read as findings.
+Finally, and most substantively, M1R does not separate dense from sparse encoding: a
+Transformer over bin-indexed tokens is not a perceptron over a dense vector, and
+some of what we attribute to the encoder may be that switch rather than the
+attention mechanism. A fifth arm --- a perceptron over the rounded peak set, or a
+Transformer over bin tokens without merging --- would resolve it, and we regard that
+as the natural next experiment rather than a caveat that undermines the present one.
 
 \section*{Conclusion}
 
 Binned intensity vectors entered MS/MS machine learning from spectral library
-search, where a bin wider than the instrument's error is a virtue. Carried into
-structure annotation, the same choice discards $37.5\%$ of the peaks a model
-receives and with
-them the mass defect that identifies fragment compositions. In a controlled
-comparison holding data, targets, optimiser and schedule fixed, and giving the
-binned arm $63\%$ more parameters, replacing the binned vector with a full-precision
-peak set raised macro AUPRC from $0.0476$ to $0.1119$ --- a paired gain of $+0.0644$
-that improved $89.7\%$ of targets and exceeded the architectural change measured on
-the same data by a factor of $1.9$. We conclude that the input representation should
-be treated as a modelling decision with a measurable cost, and that a binned
-baseline is no longer an adequate control for this task.
+search, and the field's move away from them has been read as evidence that the
+spectral representation was the limiting factor. That reading was never tested,
+because no architecture reads both a binned vector and a peak set, so representation
+and encoder have always changed together. Inserting an arm that carries binned mass
+information through a peak-set encoder separates them. On 8,692 held-out molecules
+across three seeds, $58\%$ of the gain attributed to the representation is the
+encoder ($+0.0377$) and $42\%$ is the mass axis ($+0.0268$), and a sweep at fixed
+encoder locates the value of precision below $0.05$~Da. Mass precision matters, but
+less than the architecture adopted alongside it, and improvements measured against
+binned baselines cannot be used as evidence about either.
 
 \section*{Supplementary Information}
-Additional file 1 reports per-target average precision for both arms, the full
-bootstrap distribution of the paired difference, and the peak-absorption analysis
-broken down by adduct and collision energy.
+Additional file 1 reports per-target average precision for every arm and seed, the
+full bootstrap distributions, the per-seed effect sizes, and the peak-absorption
+analysis broken down by adduct and collision energy.
 
 \section*{Acknowledgements}
 We thank the CASMI 2026 organisers for assembling and releasing the corpus.
 
 \section*{Author contributions}
-X.P. designed the study, implemented the models, performed the experiments and
-analyses, and wrote the manuscript. C.W. contributed to the interpretation of the
-chemical results and revised the manuscript. Both authors read and approved the
-final manuscript.
+X.P. designed the study, implemented the models and the control, performed the
+experiments and analyses, and wrote the manuscript. C.W. contributed to the
+interpretation of the chemical results and revised the manuscript. Both authors read
+and approved the final manuscript.
 
 \section*{Funding}
 Not applicable.
 
 \section*{Availability of data and materials}
-The CASMI 2026 corpus is distributed by the competition organisers. All code,
-configurations and the exact preprocessing used here are available at
-\url{https://github.com/xulinpan/cheminformatics}. Figures and tables are regenerated from the
-saved result files by a single command.
+All code, configurations, trained-run reports and the analysis that generates every
+number in this paper are available at
+\url{https://github.com/xulinpan/cheminformatics} under the MIT licence. The CASMI
+2026 corpus is distributed by the competition organisers.
 
 \section*{Declarations}
-\hd{Competing interests} The author declares no competing interests.
+\hd{Competing interests} The authors declare no competing interests.
 
 \begin{thebibliography}{99}
 \small
 
-\bibitem{duhrkop2021cosmic} Hoffmann MA, Nothias L-F, Ludwig M, Fleischauer M,
+\bibitem{hoffmann2022cosmic} Hoffmann MA, Nothias L-F, Ludwig M, Fleischauer M,
 Gentry EC, Witting M, Dorrestein PC, D\"uhrkop K, B\"ocker S (2022) High-confidence
 structural annotation of metabolites absent from spectral libraries. Nat Biotechnol
 40:411--421

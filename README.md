@@ -1,10 +1,11 @@
-# Full-precision peak representations for MS/MS substructure prediction
+# Most of the advantage of peak-level MS/MS is the encoder, not the mass axis
 
-Code, figures and manuscript source for a controlled measurement of what it costs
-to bin a tandem mass spectrum before handing it to a model.
+Code, figures and manuscript source for a controlled decomposition of the gain that
+peak-level models show over binned baselines in tandem mass spectrometry.
 
 > **Status.** The manuscript in `manuscript/` is a working draft prepared for
 > submission to *Journal of Cheminformatics*. It has not yet been peer reviewed.
+> Its claims are current as of the three-seed replication and bin-width sweep.
 > See [Open items](#open-items) for the controls that are still outstanding.
 
 ## The question
@@ -117,9 +118,8 @@ what has and has not been established:
    the gain propagates to top-*k* structure retrieval is not shown here.
 5. **Scale.** Experiments use two of twenty-one corpus row groups, roughly a tenth
    of the available data.
-6. **The manuscript text has not caught up.** `manuscript/results_paperA.tex` is
-   current. `manuscript/paperA.tex` still argues the pre-control claim and needs
-   rewriting around the decomposition.
+6. **No external baseline.** Every arm here is ours. A published method on the same
+   split would anchor the absolute values.
 
 ## Citing
 
