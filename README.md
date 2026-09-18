@@ -1,4 +1,4 @@
-# Encoder study of peak-level tandem mass spectra
+# The encoder, not the bins: decomposing peak-level MS/MS gains
 
 Code, figures and manuscript source for a controlled decomposition of the gain that
 peak-level models show over binned baselines in tandem mass spectrometry.
