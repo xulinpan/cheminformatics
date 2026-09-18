@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software or refer to these results, please cite the paper below."
-title: "Full-precision peak representations outperform binned spectra for substructure prediction from tandem mass spectra"
+title: "Peak-level tandem mass spectra: most of the advantage is the encoder, not the representation"
 abstract: >-
   Code and analysis supporting a controlled measurement of the cost of binning
   tandem mass spectra for substructure prediction. Replacing a 0.5 Da binned

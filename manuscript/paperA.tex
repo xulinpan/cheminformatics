@@ -22,8 +22,8 @@
 
 \newcommand{\hd}[1]{\medskip\par\noindent\textbf{#1}\par\nobreak\vspace{2pt}\noindent\ignorespaces}
 
-\title{\vspace{-2em}\bfseries Most of the advantage of peak-level tandem mass
-spectra is the encoder, not the mass axis}
+\title{\vspace{-2em}\bfseries Peak-level tandem mass spectra: most of the
+advantage is the encoder, not the representation}
 \author{Xulin Pan\textsuperscript{1}\thanks{Correspondence: \texttt{xulinpanias@gmail.com}}
 \quad Chuanming Wang\textsuperscript{2}\\[4pt]
 \small \textsuperscript{1}The Pennsylvania State University, University Park, PA, USA\\
@@ -43,8 +43,9 @@ normally forces an architecture change at the same time: a peak set cannot be re
 by the network that reads a binned vector. Here we separate them. We introduce a
 rounding control that snaps each peak to its bin centre, merges the peaks that
 collide, and passes the result through the \emph{identical} peak-set Transformer at
-an identical parameter count, so the encoder changes with the mass axis held
-constant and the mass axis changes with the encoder held constant. On the CASMI
+an identical parameter count, so the encoder changes with the mass axis --- the
+precision of the $m/z$ scale --- held constant, and the mass axis changes with the
+encoder held constant. On the CASMI
 2026 corpus, over 8,692 held-out molecules and three training seeds, replacing a
 $0.5$~Da binned baseline with a full-precision peak-set model raised macro AUPRC
 from $0.0478$ to $0.1122$ against a chance level of $0.0093$. The control splits
@@ -121,9 +122,11 @@ rests on experiments that cannot supply one.
 This paper supplies the separation. The obstacle above is real but not
 insurmountable: while a peak-set encoder cannot read a binned vector, it can read
 peaks whose $m/z$ has been \emph{rounded to the bin grid}. Quantising the mass axis
-while leaving the peak-set interface intact yields an arm that carries the
-baseline's mass information through the treatment's architecture, and inserting it
-between the two turns a confounded two-arm comparison into a decomposition. We
+--- we use the term throughout for the precision of the $m/z$ scale, the component
+of the input representation that binning actually destroys --- while leaving the
+peak-set interface intact yields an arm that carries the baseline's mass
+information through the treatment's architecture, and inserting it between the two
+turns a confounded two-arm comparison into a decomposition. We
 report that decomposition across three training seeds, extend it with a bin-width
 sweep that prices precision as a continuous quantity, and examine what the results
 imply for how baselines in this area should be constructed and read.

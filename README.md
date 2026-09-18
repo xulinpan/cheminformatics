@@ -1,4 +1,4 @@
-# Most of the advantage of peak-level MS/MS is the encoder, not the mass axis
+# Peak-level MS/MS: most of the advantage is the encoder, not the representation
 
 Code, figures and manuscript source for a controlled decomposition of the gain that
 peak-level models show over binned baselines in tandem mass spectrometry.
