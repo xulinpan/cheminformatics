@@ -15,17 +15,24 @@ from typing import Optional, Sequence
 @dataclass
 class Paths:
     root: Path = Path(".")
+    # Which corpus file to read, and where its derived artefacts live. The
+    # defaults reproduce the original single-library runs; the "open" dataset
+    # (GNPS + MassBank + MoNA) uses its own prepared/ and runs/ directories so
+    # the two never mix and neither clobbers the other.
+    train_name: str = "train.parquet"
+    prepared_name: str = "dbf2_prepared"
+    runs_name: str = "dbf2_runs"
 
     @property
     def raw(self) -> Path: return self.root / "data"
     @property
-    def train_parquet(self) -> Path: return self.raw / "train.parquet"
+    def train_parquet(self) -> Path: return self.raw / self.train_name
     @property
     def test_parquet(self) -> Path: return self.raw / "test.parquet"
     @property
     def sample_submission(self) -> Path: return self.raw / "sample_submission.csv"
     @property
-    def prepared(self) -> Path: return self.root / "dbf2_prepared"
+    def prepared(self) -> Path: return self.root / self.prepared_name
     @property
     def views(self) -> Path: return self.prepared / "views"
     @property
@@ -37,7 +44,7 @@ class Paths:
     @property
     def oracle(self) -> Path: return self.prepared / "oracle_test_key.csv"
     @property
-    def runs(self) -> Path: return self.root / "dbf2_runs"
+    def runs(self) -> Path: return self.root / self.runs_name
 
 
 # ------------------------------------------------------------------- preprocessing
@@ -185,10 +192,26 @@ class Config:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(d, indent=2, default=str), encoding="utf-8")
 
+    #: Named corpora. "open" is the redistributable subset built by
+    #: scripts/make_open_subset.py; see docs/corpus_composition.md.
+    DATASETS = {
+        "default": ("train.parquet", "dbf2_prepared", "dbf2_runs"),
+        "open": ("train_open.parquet", "dbf2_prepared_open", "dbf2_runs_open"),
+    }
+
     @staticmethod
-    def ablation(rung: str, root) -> "Config":
+    def paths_for(dataset: str, root) -> "Paths":
+        if dataset not in Config.DATASETS:
+            raise ValueError(f"unknown dataset {dataset!r}; "
+                             f"expected one of {sorted(Config.DATASETS)}")
+        train, prep, runs = Config.DATASETS[dataset]
+        return Paths(root=Path(root), train_name=train,
+                     prepared_name=prep, runs_name=runs)
+
+    @staticmethod
+    def ablation(rung: str, root, dataset: str = "default") -> "Config":
         """Configurations for the ablation ladder of specification section 15."""
-        c = Config(paths=Paths(root=Path(root)))
+        c = Config(paths=Config.paths_for(dataset, root))
         if rung == "M0":        # binned vector, mean-pooled views
             c.model.encoder, c.model.pooling = "binned", "mean"
         elif rung == "M1":      # peak-set encoder, still mean-pooled

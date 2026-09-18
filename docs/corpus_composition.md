@@ -69,3 +69,36 @@ ablation at the current scale takes about 31 minutes end to end (M0 3.1, M1R 9.0
 M1 8.9, M2 10.4). At full corpus scale that is roughly 5 hours per ablation and
 about 16 hours for three seeds, before preprocessing — an overnight job rather than
 a project.
+
+## The subset as built
+
+`scripts/make_open_subset.py` writes `data/train_open.parquet` from the three open
+sources, preserving the schema so every downstream stage runs unchanged:
+
+| | row groups 0-1 (used so far) | open subset |
+|---|---:|---:|
+| spectra | 262,144 | 414,992 |
+| structures | 43,628 | 52,428 |
+| peaks | — | 78,025,942 |
+| source libraries | 2 (99.0% enveda-180) | 3 (GNPS, MassBank, MoNA) |
+| distinct instruments | 2 | 66 |
+| distinct adducts | 16 | 112 |
+| dominant instrument | timsTOF, 99% | Orbitrap 29%, LC-ESI-QTOF 17% |
+| held-out structures present | 400 of 400 | 2 of 400 |
+
+The last row matters for the leak: the original corpus contained every one of the
+400 competition structures, which is how the leak arose and why all 400 had to be
+excluded from training. The open subset contains two of them, so the exclusion
+remains necessary but is no longer material.
+
+The file is selected by name rather than by editing code:
+
+```bash
+python -m dbf2 prepare --root . --dataset open
+python -m dbf2 ablate  --root . --dataset open --rungs M0 M1R M1 M2 --epochs 15
+python -m dbf2 ablate  --root . --dataset open --rungs M0 M1R M1 M2 --epochs 15 --seed 7
+```
+
+`--dataset open` reads `data/train_open.parquet` and writes to
+`dbf2_prepared_open/` and `dbf2_runs_open/`, so the existing single-library
+artefacts are left untouched and the two can be compared.

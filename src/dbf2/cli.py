@@ -9,6 +9,8 @@
     python -m dbf2 descriptors --root . --library processed_v2/molecules.parquet
     python -m dbf2 predict  --root . --run dbf2_runs/M2 --budget 150
     python -m dbf2 oracle   --root .
+    python -m dbf2 prepare  --root . --dataset open      # redistributable subset
+    python -m dbf2 ablate   --root . --dataset open --rungs M0 M1R M1 M2 --epochs 15
 """
 from __future__ import annotations
 
@@ -56,7 +58,7 @@ def _apply_overrides(cfg, a) -> None:
 
 def cmd_train(a) -> None:
     from .train import train
-    cfg = Config.ablation(a.rung, a.root)
+    cfg = Config.ablation(a.rung, a.root, a.dataset)
     _apply_overrides(cfg, a)
     tag = a.tag or a.rung
     out = cfg.paths.runs / tag
@@ -75,7 +77,7 @@ def cmd_bayes(a) -> None:
 
 def cmd_predict(a) -> None:
     from .predict import run
-    cfg = Config.ablation("M2", a.root)
+    cfg = Config.ablation("M2", a.root, a.dataset)
     if a.max_candidates: cfg.infer.max_candidates = a.max_candidates
     run(cfg, a.run, a.budget, a.calibration_queries)
 
@@ -90,14 +92,14 @@ def cmd_ablate(a) -> None:
     from .train import train
     results = {}
     for rung in a.rungs:
-        cfg = Config.ablation(rung, a.root)
+        cfg = Config.ablation(rung, a.root, a.dataset)
         _apply_overrides(cfg, a)
         tag = rung if a.seed is None else f"{rung}_s{a.seed}"
         out = cfg.paths.runs / tag
         cfg.to_json(out / "config.json")
         results[tag] = train(cfg, out, tag)
     name = "ablation_summary.json" if a.seed is None else f"ablation_summary_s{a.seed}.json"
-    path = Path(a.root) / "dbf2_runs" / name
+    path = Config.paths_for(a.dataset, a.root).runs / name
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(results, indent=2), encoding="utf-8")
     print("\n=== ABLATION SUMMARY ===")
@@ -112,6 +114,11 @@ def cmd_ablate(a) -> None:
 def main() -> None:
     # --root is accepted both before and after the subcommand
     common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--dataset", default="default",
+                        choices=sorted(Config.DATASETS),
+                        help="which corpus to use; 'open' is the "
+                             "GNPS+MassBank+MoNA subset, with its own "
+                             "prepared/ and runs/ directories")
     common.add_argument("--root", type=Path, default=None,
                         help="project root holding data/ (default: current directory)")
 
