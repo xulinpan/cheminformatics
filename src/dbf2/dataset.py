@@ -271,8 +271,32 @@ class PeakBucketBatchSampler(torch.utils.data.Sampler):
         return n // self.batch_size if self.drop_last else (n + self.batch_size - 1) // self.batch_size
 
 
+def require_prepared(cfg: Config) -> None:
+    """Fail early and legibly when Stage 0 has not been run for this dataset.
+
+    Without this the first missing artefact surfaces as a FileNotFoundError from
+    deep inside pandas, which does not tell the reader that the fix is to run
+    `prepare` -- and, once corpora are selected by name, does not tell them which
+    dataset is unprepared.
+    """
+    needed = [cfg.paths.targets, cfg.paths.target_dict, cfg.paths.molecules,
+              cfg.paths.views / "spectra.parquet"]
+    missing = [p for p in needed if not Path(p).exists()]
+    if not missing:
+        return
+    ds = next((name for name, v in Config.DATASETS.items()
+               if v[1] == cfg.paths.prepared_name), cfg.paths.prepared_name)
+    raise SystemExit(
+        f"dataset {ds!r} has not been prepared: {cfg.paths.prepared} is missing "
+        f"{', '.join(Path(p).name for p in missing)}.\n"
+        f"Run stage 0 first:\n"
+        f"    python -m dbf2 prepare --root {cfg.paths.root} --dataset {ds}\n"
+        f"It is resumable -- pass --budget SECONDS and rerun to continue.")
+
+
 def load_targets(cfg: Config, keep_only_above_prevalence: bool = False):
     """Return (presence, counts, row index by mol_idx, presence names, count names)."""
+    require_prepared(cfg)
     tgt = pd.read_parquet(cfg.paths.targets)
     dic = pd.read_csv(cfg.paths.target_dict)
     pres_names = dic.loc[dic.family == "brics_presence", "variable"].tolist()
