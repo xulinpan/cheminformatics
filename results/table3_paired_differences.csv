@@ -1,4 +1,6 @@
 comparison,change,Δ AUPRC,95% CI,targets improved
-M1 − M0,representation,+0.0644,"[+0.0570, +0.0722]",89.7%
-M2 − M1,aggregation,+0.0341,"[+0.0277, +0.0407]",72.3%
-M2 − M0,both,+0.0984,"[+0.0885, +0.1090]",94.3%
+M1R − M0,encoder (mass axis binned in both arms),+0.0392,"[+0.0340, +0.0447]",87.0%
+M1 − M1R,mass axis (identical encoder in both arms),+0.0252,"[+0.0199, +0.0307]",67.1%
+M1 − M0,encoder and mass axis together,+0.0644,"[+0.0570, +0.0720]",89.7%
+M2 − M1,aggregation,+0.0341,"[+0.0277, +0.0408]",72.3%
+M2 − M0,all three,+0.0984,"[+0.0882, +0.1090]",94.3%

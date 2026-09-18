@@ -78,13 +78,39 @@ def save(fig, out: Path, name: str) -> None:
 
 
 # ----------------------------------------------------------------------- data
+#: every rung the figures know about, in display order. M1R is the rounding
+#: control: the M1 encoder fed peaks snapped to the M0 bin grid. It is optional,
+#: so the figures build whether or not it has been run.
+ALL_RUNGS = ("M0", "M1R", "M1", "M2")
+
+
+def available_rungs(root: Path) -> list:
+    """Rungs with test predictions on disk, in display order."""
+    return [r for r in ALL_RUNGS
+            if (root / "dbf2_runs" / r / f"{r}_test_predictions.npz").exists()]
+
+
 def load(root: Path) -> dict:
     d = {}
-    d["ablation"] = json.load(open(root / "dbf2_runs" / "ablation_summary.json"))
+    runs = available_rungs(root)
+    if not runs:
+        raise SystemExit("no trained rungs found under dbf2_runs/")
+    d["runs"] = runs
+    summary = root / "dbf2_runs" / "ablation_summary.json"
+    d["ablation"] = json.load(open(summary)) if summary.exists() else {}
+    for r in runs:                      # a rung trained on its own has no summary entry
+        if r not in d["ablation"]:
+            rep = root / "dbf2_runs" / r / f"{r}_report.json"
+            if rep.exists():
+                d["ablation"][r] = json.load(open(rep))
+    missing = [r for r in runs if r not in d["ablation"]]
+    if missing:
+        raise SystemExit(f"no report for {missing}; rerun train for those rungs")
     d["history"] = {r: pd.read_csv(root / "dbf2_runs" / r / f"{r}_history.csv")
-                    for r in ("M0", "M1", "M2")}
+                    for r in runs
+                    if (root / "dbf2_runs" / r / f"{r}_history.csv").exists()}
     d["pred"] = {r: np.load(root / "dbf2_runs" / r / f"{r}_test_predictions.npz")
-                 for r in ("M0", "M1", "M2")}
+                 for r in runs}
     d["viewscale"] = json.load(open(root / "dbf2_runs" / "viewscale.json"))
     d["decomp"] = json.load(open(root / "dbf2_runs" / "decomposition.json"))
     d["acc"] = pd.read_csv(root / "dbf2_runs" / "M2" / "accuracy_analysis.csv")
@@ -101,14 +127,27 @@ def average_precision(y, p):
     return float((np.cumsum(y) / np.arange(1, y.size + 1) * y).sum() / n)
 
 
+#: (lo, hi) -> what the difference isolates. The M1R rows are the ones that
+#: separate the encoder from the mass axis; without them "M1-M0" confounds both.
+PAIR_MEANING = {
+    ("M0", "M1R"): "encoder (mass axis binned in both arms)",
+    ("M1R", "M1"): "mass axis (identical encoder in both arms)",
+    ("M0", "M1"):  "encoder and mass axis together",
+    ("M1", "M2"):  "aggregation",
+    ("M0", "M2"):  "all three",
+}
+
+
 def paired_differences(pred, seed=0, n_boot=5000):
-    y = pred["M1"]["target"]
+    y = pred[next(iter(pred))]["target"]
     scored = [j for j in range(y.shape[1]) if 5 <= y[:, j].sum() <= y.shape[0] - 5]
     ap = {r: np.array([average_precision(y[:, j].astype(float), pred[r]["prob"][:, j])
                        for j in scored]) for r in pred}
     rng = np.random.RandomState(seed)
     out = {}
-    for lo, hi in (("M0", "M1"), ("M1", "M2"), ("M0", "M2")):
+    for lo, hi in PAIR_MEANING:
+        if lo not in pred or hi not in pred:
+            continue
         d = ap[hi] - ap[lo]
         idx = rng.randint(0, len(d), (n_boot, len(d)))
         dr = d[idx].mean(1)
@@ -121,32 +160,54 @@ def paired_differences(pred, seed=0, n_boot=5000):
 
 
 # -------------------------------------------------------------------- figures
-def fig_ablation(d, out, paired, chance):
-    rungs = ["M0", "M1", "M2"]
-    labels = ["M0\n0.5 Da bins\nmean pool", "M1\npeak set\nmean pool",
-              "M2\npeak set\nhierarchical"]
-    vals = [d["ablation"][r]["test"]["macro_auprc"] for r in rungs]
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(7.6, 3.3))
+RUNG_LABEL = {
+    "M0":  "M0\n0.5 Da bins\nmean pool",
+    "M1R": "M1R\nrounded to bins\nmean pool",
+    "M1":  "M1\npeak set\nmean pool",
+    "M2":  "M2\npeak set\nhierarchical",
+}
+RUNG_LEGEND = {
+    "M0":  "M0   binned + mean",
+    "M1R": "M1R  rounded peak set + mean",
+    "M1":  "M1   peak set + mean",
+    "M2":  "M2   peak set + hierarchical",
+}
 
-    x = np.arange(3)
+
+def fig_ablation(d, out, paired, chance):
+    rungs = d["runs"]
+    labels = [RUNG_LABEL[r] for r in rungs]
+    vals = [d["ablation"][r]["test"]["macro_auprc"] for r in rungs]
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(7.6 + 0.9 * (len(rungs) - 3), 3.3))
+
+    x = np.arange(len(rungs))
     a1.axhline(chance, color=MUTED, lw=1.0, ls=(0, (4, 3)), zorder=1)
     a1.text(-0.45, -0.004, f"chance {chance:.3f}", color=MUTED, fontsize=7.4,
             va="top", ha="left")
-    for i, (v, c) in enumerate(zip(vals, SERIES)):
+    palette = [SERIES[i % len(SERIES)] for i in range(len(rungs))]
+    for i, (v, c) in enumerate(zip(vals, palette)):
         a1.plot([i, i], [0, v], color=c, lw=2.2, solid_capstyle="round", zorder=2)
         a1.plot([i], [v], "o", color=c, ms=8, mec=SURFACE, mew=1.4, zorder=3)
         a1.text(i, v + 0.008, f"{v:.4f}", ha="center", va="bottom",
                 color=INK, fontsize=8.4, fontweight="bold")
     a1.set_xticks(x); a1.set_xticklabels(labels, color=INK_2, fontsize=7.8)
-    a1.set_xlim(-0.5, 2.5); a1.set_ylim(-0.016, max(vals) * 1.25)
+    a1.set_xlim(-0.5, len(rungs) - 0.5); a1.set_ylim(-0.016, max(vals) * 1.25)
     finish(a1, "Substructure prediction", "held-out macro AUPRC, 8,692 molecules",
            ylabel="macro AUPRC")
 
-    keys = ["M1-M0", "M2-M1", "M2-M0"]
-    names = ["M1 − M0\nrepresentation", "M2 − M1\naggregation", "M2 − M0\nboth"]
-    y = np.arange(3)[::-1]
+    short = {("M0", "M1R"): "encoder", ("M1R", "M1"): "mass axis",
+             ("M0", "M1"): "both", ("M1", "M2"): "aggregation",
+             ("M0", "M2"): "all three"}
+    keys, names = [], []
+    for (lo, hi) in PAIR_MEANING:
+        k = f"{hi}-{lo}"
+        if k in paired:
+            keys.append(k)
+            names.append(f"{hi} \u2212 {lo}\n{short[(lo, hi)]}")
+    y = np.arange(len(keys))[::-1]
     a2.axvline(0, color=BASELINE, lw=1.0, zorder=1)
-    for yi, k, c in zip(y, keys, [SERIES[1], SERIES[2], SERIES[0]]):
+    bar_colors = [SERIES[i % len(SERIES)] for i in range(len(keys))]
+    for yi, k, c in zip(y, keys, bar_colors):
         v = paired[k]
         a2.plot([v["lo"], v["hi"]], [yi, yi], color=c, lw=2.2,
                 solid_capstyle="round", zorder=2)
@@ -156,7 +217,9 @@ def fig_ablation(d, out, paired, chance):
         a2.text(v["hi"] + 0.005, yi - 0.30, f"{v['frac_improved']:.0%} of targets",
                 va="center", color=MUTED, fontsize=7.4)
     a2.set_yticks(y); a2.set_yticklabels(names, color=INK_2, fontsize=7.8)
-    a2.set_ylim(-0.7, 2.6); a2.set_xlim(-0.008, 0.185)
+    a2.set_ylim(-0.7, len(keys) - 0.4)
+    hi_max = max(paired[k]["hi"] for k in keys)
+    a2.set_xlim(min(-0.008, min(paired[k]["lo"] for k in keys) - 0.01), hi_max * 1.35)
     finish(a2, "Paired per-target difference",
            "bootstrap over targets, 95% interval", xlabel="Δ AUPRC", grid_axis="x")
     fig.tight_layout(w_pad=2.2)
@@ -165,7 +228,9 @@ def fig_ablation(d, out, paired, chance):
 
 def fig_training(d, out):
     fig, ax = plt.subplots(figsize=(4.6, 3.1))
-    for r, c in zip(("M0", "M1", "M2"), SERIES):
+    hist_runs = [r for r in d["runs"] if r in d["history"]]
+    for i, r in enumerate(hist_runs):
+        c = SERIES[i % len(SERIES)]
         h = d["history"][r]
         ax.plot(h.epoch, h.val_macro_auprc, color=c, lw=1.9, zorder=3)
         ax.plot(h.epoch.iloc[-1], h.val_macro_auprc.iloc[-1], "o", color=c, ms=7,
@@ -173,12 +238,11 @@ def fig_training(d, out):
         ax.text(h.epoch.iloc[-1] + 0.35, h.val_macro_auprc.iloc[-1], r,
                 color=c, fontsize=8.6, fontweight="bold", va="center")
     ax.set_xlim(-0.4, 16.6)
-    handles = [Line2D([], [], color=c, lw=1.9,
-                      label={"M0": "M0  binned + mean", "M1": "M1  peak set + mean",
-                             "M2": "M2  peak set + hierarchical"}[r])
-               for r, c in zip(("M0", "M1", "M2"), SERIES)]
+    handles = [Line2D([], [], color=SERIES[i % len(SERIES)], lw=1.9,
+                      label=RUNG_LEGEND[r])
+               for i, r in enumerate(hist_runs)]
     ax.legend(handles=handles, loc="upper left", labelcolor=INK_2)
-    finish(ax, "Training curves", "validation macro AUPRC; all three plateau by epoch 13",
+    finish(ax, "Training curves", "validation macro AUPRC; every arm plateaus by epoch 13",
            xlabel="epoch", ylabel="macro AUPRC")
     fig.tight_layout()
     save(fig, out, "fig2_training_curves")
@@ -455,15 +519,14 @@ def tables(d, out, paired, chance, n_scored, repr_stats):
         "macro AUROC": f"{ab[r]['test']['macro_auroc']:.4f}",
         "micro AUPRC": f"{ab[r]['test']['micro_auprc']:.4f}",
         "Brier": f"{ab[r]['test']['brier']:.5f}",
-    } for r in ("M0", "M1", "M2")])
+    } for r in d["runs"]])
     write_table(t2, out, "table2_ablation",
                 f"Ablation on {ab['M0']['test']['n_molecules']:,} held-out molecules. "
                 f"Chance macro AUPRC is {chance:.4f} over {n_scored} scored targets.")
 
     t3 = pd.DataFrame([{
         "comparison": k.replace("-", " − "),
-        "change": {"M1-M0": "representation", "M2-M1": "aggregation",
-                   "M2-M0": "both"}[k],
+        "change": {f"{hi}-{lo}": v for (lo, hi), v in PAIR_MEANING.items()}[k],
         "Δ AUPRC": f"{v['mean']:+.4f}",
         "95% CI": f"[{v['lo']:+.4f}, {v['hi']:+.4f}]",
         "targets improved": f"{v['frac_improved']:.1%}",
