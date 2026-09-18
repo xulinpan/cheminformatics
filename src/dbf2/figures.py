@@ -273,11 +273,24 @@ def fig_isomer(d, out):
 
 
 def fig_representation(root, out):
-    t = pd.read_parquet(root / "data" / "test.parquet", columns=["ms2_mzs"])
-    mz = np.concatenate(t.ms2_mzs.values)
+    t = pd.read_parquet(root / "data" / "test.parquet",
+                        columns=["ms2_mzs", "ms2_normalized_intensities", "precursor_mz"])
+    # Measure the peaks the MODEL sees, not the raw file. The raw spectra carry a
+    # long tail of sub-threshold peaks that preprocessing removes before either
+    # arm is trained; counting them inflates the absorbed fraction from 34.7% to
+    # 60.7% by charging binning for peaks no model ever received.
+    cleaned = []
+    for a, v, prec in zip(t.ms2_mzs, t.ms2_normalized_intensities, t.precursor_mz):
+        a = np.asarray(a, float); v = np.asarray(v, float)
+        if v.size == 0:
+            continue
+        keep = (v >= 1e-3 * v.max()) & (a < float(prec) + 1.5)
+        if keep.any():
+            cleaned.append(a[keep])
+    mz = np.concatenate(cleaned)
     merged = tot = 0
-    for a in t.ms2_mzs:
-        b = np.floor(np.asarray(a) / 0.5).astype(np.int64)
+    for a in cleaned:
+        b = np.floor(a / 0.5).astype(np.int64)
         tot += b.size; merged += b.size - np.unique(b).size
     defect = mz - np.round(mz)
     fig, (a1, a2) = plt.subplots(1, 2, figsize=(7.4, 3.0))
@@ -291,8 +304,7 @@ def fig_representation(root, out):
     # merged fraction against fragment m/z: crowding worsens where peaks are dense
     edges = np.arange(50, 500, 50)
     kept = np.zeros(len(edges) - 1); total = np.zeros(len(edges) - 1)
-    for a in t.ms2_mzs:
-        arr = np.asarray(a)
+    for arr in cleaned:
         b = np.floor(arr / 0.5).astype(np.int64)
         bucket = np.digitize(arr, edges) - 1
         for k in range(len(edges) - 1):

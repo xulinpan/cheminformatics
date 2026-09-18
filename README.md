@@ -44,9 +44,11 @@ Chance macro AUPRC is 0.0093 over 477 scored targets on 8,692 held-out molecules
 | M2 − M0 | both | +0.0984 | [+0.0885, +0.1090] | 94.3% |
 
 The representation change is 1.9× the architectural change measured on the same
-molecules with the same targets. Separately, 60.7% of the evaluation spectra's
-400,707 peaks fall into a 0.5 Da bin already occupied by another peak from the same
-spectrum, and are therefore absorbed.
+molecules with the same targets. Separately, 37.5% of the 93,611 evaluation peaks
+that survive preprocessing fall into a 0.5 Da bin already occupied by another peak
+from the same spectrum, and are therefore absorbed. (The raw files give 60.7%, but
+preprocessing discards 76.6% of those peaks before either arm is trained, so that
+figure charges binning for peaks no model receives.)
 
 ## Repository layout
 
@@ -94,9 +96,12 @@ The manuscript's own limitations, stated here so that anyone reading the code kn
 what has and has not been established:
 
 1. **The two arms differ in encoder as well as representation** (an MLP over the
-   binned vector, a Transformer over the peak set). The clean isolation is to round
-   each peak's *m/z* to its bin centre, merge the collisions, and pass the result
-   through the *identical* Transformer. That control has not yet been run.
+   binned vector, a Transformer over the peak set). The clean isolation is rung
+   **M1R**, implemented in `src/dbf2/dataset.py` (`quantise_merge`): each peak's
+   *m/z* is rounded to its bin centre, collisions are merged, and the result goes
+   through the *identical* Transformer at an identical parameter count. The code
+   and its tests are in place; **the run itself is still outstanding**, and its
+   result determines whether the paper's central claim holds.
 2. **One training run per arm.** The reported intervals bootstrap over targets and
    do not capture initialisation variance. Seed replication is outstanding.
 3. **The mass-defect mechanism is argued but not ablated.** Removing the explicit

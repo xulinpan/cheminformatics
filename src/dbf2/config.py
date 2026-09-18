@@ -81,6 +81,13 @@ class ModelConfig:
     # binned-encoder settings, used only when encoder == "binned"
     bin_width: float = 0.5
     bin_max_mz: float = 1024.0
+    # Rounding control (rung M1R). When > 0, every peak m/z is snapped to the
+    # centre of its bin_width grid cell and peaks that then collide are merged
+    # before the peak-set encoder ever sees them. The encoder, its parameter
+    # count and the training budget are unchanged, so the only quantity that
+    # differs from M1 is the precision of the mass axis. 0 disables it.
+    quantise_mz: float = 0.0
+    quantise_merge: str = "sqrt"             # {"sqrt", "sum", "max"}; sqrt matches BinnedEncoder
 
     # --- acquisition covariates
     d_cov: int = 32
@@ -186,8 +193,11 @@ class Config:
             c.model.encoder, c.model.pooling = "binned", "mean"
         elif rung == "M1":      # peak-set encoder, still mean-pooled
             c.model.encoder, c.model.pooling = "peakset", "mean"
+        elif rung == "M1R":     # M1 with the mass axis rounded to the M0 bin grid
+            c.model.encoder, c.model.pooling = "peakset", "mean"
+            c.model.quantise_mz = c.model.bin_width
         elif rung in ("M2", "M3", "M4", "M5"):
             c.model.encoder, c.model.pooling = "peakset", "hierarchical"
         else:
-            raise ValueError(f"unknown ablation rung {rung!r}; expected M0..M5")
+            raise ValueError(f"unknown ablation rung {rung!r}; expected M0, M1, M1R, M2..M5")
         return c

@@ -70,7 +70,9 @@ class CandidateLibrary:
 def presence_probabilities(model, store: ViewStore, ids, cfg: Config, device
                            ) -> Tuple[np.ndarray, np.ndarray]:
     ds = MoleculeViewDataset(store, ids, max_peaks=cfg.data.max_peaks or 0,
-                             max_views=cfg.train.views_per_molecule, train=False, seed=0)
+                             max_views=cfg.train.views_per_molecule, train=False, seed=0,
+                             quantise_mz=cfg.model.quantise_mz,
+                             quantise_merge_mode=cfg.model.quantise_merge)
     dl = DataLoader(ds, batch_size=cfg.train.batch_molecules, shuffle=False,
                     collate_fn=collate)
     P, G = [], []

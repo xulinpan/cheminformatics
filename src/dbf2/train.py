@@ -57,7 +57,9 @@ def build_loaders(cfg: Config, presence, counts, row_of, fps=None):
                       if len(v) > cfg.train.limit_molecules else v)
                   for k, v in splits.items()}
     common = dict(presence=presence, counts=counts, target_row=row_of,
-                  max_peaks=cfg.data.max_peaks or 0, fingerprints=fps)
+                  max_peaks=cfg.data.max_peaks or 0, fingerprints=fps,
+                  quantise_mz=cfg.model.quantise_mz,
+                  quantise_merge_mode=cfg.model.quantise_merge)
     ds = {
         "train": MoleculeViewDataset(store, splits["train"],
                                      max_views=cfg.train.views_per_molecule,

@@ -63,6 +63,42 @@ class ViewStore:
         return np.asarray(self.mz[o:o + n]), np.asarray(self.inten[o:o + n])
 
 
+def quantise_merge(mz: np.ndarray, inten: np.ndarray, width: float,
+                   mode: str = "sqrt") -> Tuple[np.ndarray, np.ndarray]:
+    """Snap peaks to a bin grid and merge the ones that collide.
+
+    This is the rounding control of the representation ablation. Peaks are
+    assigned to cells by ``floor(mz / width)``, exactly as ``BinnedEncoder``
+    indexes them, and each surviving peak is placed at its cell centre. Peaks
+    sharing a cell are merged; ``mode="sqrt"`` accumulates square-root intensity
+    the way the binned vector does, so the merged peak carries the same total
+    the binned model would have seen.
+
+    Returns the peaks a full-precision encoder would receive if the mass axis
+    had been discretised first. Nothing else about the spectrum changes.
+    """
+    if not width or width <= 0 or mz.size == 0:
+        return mz, inten
+    mz64 = np.asarray(mz, np.float64)
+    idx = np.floor(mz64 / width).astype(np.int64)
+    uniq, inv = np.unique(idx, return_inverse=True)
+    centres = (uniq.astype(np.float64) + 0.5) * width
+    if uniq.size == mz64.size:                       # nothing collided
+        return centres, np.asarray(inten, np.float64)
+    it64 = np.asarray(inten, np.float64)
+    out = np.zeros(uniq.size, np.float64)
+    if mode == "sqrt":
+        np.add.at(out, inv, np.sqrt(np.clip(it64, 0.0, None)))
+        out = out ** 2
+    elif mode == "sum":
+        np.add.at(out, inv, it64)
+    elif mode == "max":
+        np.maximum.at(out, inv, it64)
+    else:
+        raise ValueError(f"unknown merge mode {mode!r}; expected sqrt, sum or max")
+    return centres, out
+
+
 class MoleculeViewDataset(Dataset):
     """One item per molecule: a set of views plus the structural targets."""
 
@@ -72,12 +108,15 @@ class MoleculeViewDataset(Dataset):
                  target_row: Optional[Dict[int, int]] = None,
                  max_views: int = 6, max_peaks: int = 256,
                  train: bool = True, seed: int = 2026,
-                 fingerprints: Optional[np.ndarray] = None):
+                 fingerprints: Optional[np.ndarray] = None,
+                 quantise_mz: float = 0.0, quantise_merge_mode: str = "sqrt"):
         self.store = store
         self.ids = [int(g) for g in group_ids if int(g) in store.span]
         self.presence, self.counts = presence, counts
         self.target_row = target_row
         self.max_views, self.max_peaks = max_views, max_peaks
+        self.quantise_mz = float(quantise_mz or 0.0)
+        self.quantise_merge_mode = quantise_merge_mode
         self.train = train
         self.fingerprints = fingerprints
         self.rng = np.random.RandomState(seed)
@@ -101,6 +140,11 @@ class MoleculeViewDataset(Dataset):
                 sel = np.argpartition(it, -self.max_peaks)[-self.max_peaks:]
                 sel.sort()
                 mz, it = mz[sel], it[sel]
+            if self.quantise_mz > 0:
+                # applied after the intensity cap, so the control and M0 see the
+                # same peaks before discretisation
+                mz, it = quantise_merge(mz, it, self.quantise_mz,
+                                        self.quantise_merge_mode)
             mz_list.append(mz)
             in_list.append(it)
 

@@ -160,7 +160,15 @@ class PeakSetEncoder(nn.Module):
                 cov: torch.Tensor) -> torch.Tensor:
         """mz float64 (N, K); intensity (N, K); precursor float64 (N,);
         peak_mask bool (N, K) True where a real peak sits; cov (N, d_cov)."""
-        loss = precursor.to(torch.float64).unsqueeze(-1) - mz.to(torch.float64)
+        prec = precursor.to(torch.float64)
+        q = float(getattr(self.cfg, "quantise_mz", 0.0) or 0.0)
+        if q > 0:
+            # Under the rounding control the peak axis is already on the grid.
+            # The precursor must be snapped to the same grid, or the neutral
+            # loss would smuggle the precursor's full-precision mass defect
+            # back into every token.
+            prec = (torch.floor(prec / q) + 0.5) * q
+        loss = prec.unsqueeze(-1) - mz.to(torch.float64)
         defect = (mz - torch.round(mz)).to(torch.float32)
         inten = intensity.float()
         rank = torch.cumsum(peak_mask.float(), dim=-1) / peak_mask.sum(-1, keepdim=True).clamp(min=1)

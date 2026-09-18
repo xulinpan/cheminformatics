@@ -47,7 +47,8 @@ chance level of $0.0093$, a paired per-target gain of $+0.0644$ ($95\%$ CI
 $+0.0570$ to $+0.0722$) that improved $89.7\%$ of targets individually. The
 representation change was more than twice the size of an architectural change
 (hierarchical multi-view pooling) measured on the same data. Binning at $0.5$~Da
-absorbs $60.7\%$ of the observed test peaks into bins already occupied by another
+absorbs $37.5\%$ of the test peaks a model actually receives into bins already
+occupied by another
 peak, spans $1{,}667$~ppm at $m/z\,300$ on an instrument delivering about $5$~ppm,
 and pools hundreds of candidate fragment compositions into one coordinate. We
 conclude that a binned baseline is no longer an adequate control for MS/MS
@@ -62,7 +63,7 @@ MS/MS substructure prediction, isolating it from architecture, capacity and
 training budget, and granting the weaker representation the larger parameter count.
 The measured effect exceeds that of the architectural component built on top of it
 by a factor of two, and we quantify the mechanism by which binning destroys
-information: $60.7\%$ of observed peaks are absorbed into shared bins, discarding
+information: $37.5\%$ of the peaks a model receives are absorbed into shared bins, discarding
 the mass defect that distinguishes isobaric fragment compositions. The practical
 consequence is a change in what counts as an adequate control in this field.
 \normalsize
@@ -209,15 +210,22 @@ fraction of targets improved, which is insensitive to a few large per-target swi
 
 \hd{What binning removes}
 We first quantified the information discarded before any model is fitted
-(Fig.~\ref{fig:representation}). Across the $400{,}707$ peaks of the evaluation
-spectra, $243{,}273$ --- $60.7\%$ --- fall into a $0.5$~Da bin already occupied by
+(Fig.~\ref{fig:representation}). Across the $93{,}611$ peaks of the evaluation
+spectra that survive preprocessing and are therefore seen by both arms,
+$35{,}116$ --- $37.5\%$ --- fall into a $0.5$~Da bin already occupied by
 another peak from the same spectrum and are therefore absorbed. The loss is not
-concentrated in any mass range, running between $52\%$ and $67\%$ across the
+concentrated in any mass range, running between $29\%$ and $41\%$ across the
 observed $m/z$ window. The observed mass defect spans $[-0.47, +0.47]$~Da and shows
 clear compositional structure, most visibly the discrete combs below $m/z\,150$
 where few elemental compositions are available. Enumerating plausible CHNOS
 compositions within $10$~ppm places $328$ candidate fragment formulas inside a
 single $0.5$~Da bin at $m/z\,300$.
+
+The denominator matters here. The raw test files contain $400{,}707$ peaks, of
+which $60.7\%$ collide under $0.5$~Da binning, but preprocessing removes $76.6\%$
+of those as sub-threshold before either arm is trained. Charging binning for peaks
+no model ever receives would overstate the loss, so we report the absorbed fraction
+over the cleaned spectra throughout.
 
 \begin{figure}[htbp]
 \centering
@@ -226,7 +234,7 @@ single $0.5$~Da bin at $m/z\,300$.
 against fragment $m/z$ for the evaluation spectra; the visible structure, including
 the discrete combs at low $m/z$, is what binning removes. \textbf{Right}: fraction
 of peaks absorbed into an already-occupied bin, by mass range; the dashed line marks
-the overall $60.7\%$.}
+the overall $37.5\%$.}
 \label{fig:representation}
 \end{figure}
 
@@ -332,7 +340,8 @@ general.
 
 Binned intensity vectors entered MS/MS machine learning from spectral library
 search, where a bin wider than the instrument's error is a virtue. Carried into
-structure annotation, the same choice discards $60.7\%$ of observed peaks and with
+structure annotation, the same choice discards $37.5\%$ of the peaks a model
+receives and with
 them the mass defect that identifies fragment compositions. In a controlled
 comparison holding data, targets, optimiser and schedule fixed, and giving the
 binned arm $63\%$ more parameters, replacing the binned vector with a full-precision
