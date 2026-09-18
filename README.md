@@ -1,4 +1,4 @@
-# Peak-level MS/MS: most of the advantage is the encoder, not the representation
+# Encoder study of peak-level tandem mass spectra
 
 Code, figures and manuscript source for a controlled decomposition of the gain that
 peak-level models show over binned baselines in tandem mass spectrometry.
