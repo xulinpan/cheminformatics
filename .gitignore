@@ -1,0 +1,33 @@
+# LaTeX build artefacts
+*.aux
+*.log
+*.out
+*.toc
+*.synctex
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.bbl
+*.blg
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Data and run outputs (not redistributable / too large)
+data/
+*.parquet
+*.npz
+*.ckpt
+*.pt
+runs/
+prepared/
+
+# OS
+.DS_Store
+Thumbs.db

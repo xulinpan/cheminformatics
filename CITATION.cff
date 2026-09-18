@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software or refer to these results, please cite the paper below."
+title: "Full-precision peak representations outperform binned spectra for substructure prediction from tandem mass spectra"
+abstract: >-
+  Code and analysis supporting a controlled measurement of the cost of binning
+  tandem mass spectra for substructure prediction. Replacing a 0.5 Da binned
+  intensity vector with a full-precision peak set raises macro AUPRC from 0.0476
+  to 0.1119 on 8,692 held-out molecules.
+authors:
+  - family-names: Pan
+    given-names: Xulin
+    affiliation: "The Pennsylvania State University, University Park, PA, USA"
+    email: xulinpanias@gmail.com
+  - family-names: Wang
+    given-names: Chuanming
+    affiliation: "School of Biological and Food Engineering, Honghe University, Mengzi, China"
+license: MIT
+repository-code: "https://github.com/xulinpan/cheminformatics"
+keywords:
+  - tandem mass spectrometry
+  - structure annotation
+  - spectral representation
+  - mass defect
+  - substructure prediction
+  - metabolite identification
+year: 2026
