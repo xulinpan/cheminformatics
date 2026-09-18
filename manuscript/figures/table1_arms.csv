@@ -1,0 +1,5 @@
+arm,mass axis,encoder,pooling,parameters,macro AUPRC,SD over seeds
+M0,0.5 Da bins,MLP,mean,"1,164,560",0.0478,0.0006
+M1R,0.5 Da bins,Transformer,mean,"712,336",0.0854,0.0014
+M1,full precision,Transformer,mean,"712,336",0.1122,0.0039
+M2,full precision,Transformer,hierarchical,"829,584",0.1444,0.0016

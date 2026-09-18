@@ -1,0 +1,17 @@
+\begin{table}[htbp]
+\centering
+\caption{Bin-width sweep, single seed. Every arm uses the M1 encoder at an identical parameter count; only the width of the mass grid changes. The final column expresses each result as a share of the distance between the 0.5 Da arm and full precision.}
+\label{tab:table3_binwidth}
+\begin{tabular}{l r r r}
+\toprule
+bin width (Da) & peaks absorbed & macro AUPRC & share of the 0.5 Da gap closed \\
+\midrule
+0.5 & 37.5\% & 0.0867 & 0\% \\
+0.25 & 36.8\% & 0.0818 & -19\% \\
+0.1 & 33.1\% & 0.0801 & -26\% \\
+0.05 & 25.9\% & 0.0909 & 17\% \\
+0.01 & 7.5\% & 0.1030 & 65\% \\
+full precision & 0.0\% & 0.1119 & 100\% \\
+\bottomrule
+\end{tabular}
+\end{table}

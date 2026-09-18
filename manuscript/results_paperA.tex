@@ -1,0 +1,171 @@
+% Results section for Paper A, rewritten after the M1R rounding control,
+% three-seed replication and the bin-width sweep.
+\section*{Results}
+
+\hd{The four arms}
+The experiment is a ladder of four models in which each rung differs from the one
+below it in exactly one respect (Table~\ref{tab:table1_arms}). M0 is the
+conventional baseline: a $0.5$~Da binned intensity vector read by a two-layer
+perceptron. M1R keeps that binned mass axis but replaces the perceptron with the
+peak-set Transformer, snapping each peak to its bin centre and merging the peaks
+that collide, so the encoder receives tokens carrying no more mass information
+than the binned vector did. M1 hands the same Transformer the peaks at full
+precision. M2 adds hierarchical pooling over a molecule's spectra. Data, targets,
+splits, optimiser, schedule and evaluation are fixed throughout; M1R and M1 are
+identical in every configuration field but the width of the mass grid, and carry
+identical parameter counts. Each arm was trained three times under seeds
+$\{2026, 7, 13\}$.
+
+The rung that matters for the question is M1R. Without it, the contrast between a
+binned baseline and a peak-set model changes the mass axis and the encoder at the
+same time, and a difference between them cannot be assigned to either. M1R holds
+the mass axis at the baseline's resolution while giving it the treatment arm's
+encoder, so the two halves separate.
+
+\input{figures/table1_arms.tex}
+
+\hd{Seed spread}
+Across seeds the arms are stable enough to compare, but not uniformly so
+(Table~\ref{tab:table1_arms}). M0 varies by $0.0006$ and M2 by $0.0016$, while M1
+varies by $0.0039$ --- roughly six times M0's spread and, as it turns out, of the
+same order as the differences we wish to resolve. Any claim about the relative
+size of the three effects therefore has to be checked seed by seed rather than
+read off the means, and we do so below.
+
+\hd{Most of the apparent representation gain is the encoder}
+Replacing the binned vector with a full-precision peak set raises macro AUPRC from
+$0.0478$ to $0.1122$, a paired per-target gain of $+0.0645$ ($95\%$ CI $+0.0576$
+to $+0.0713$) improving $92.5\%$ of targets --- the effect one would report from a
+two-arm comparison. The control splits it in two
+(Fig.~\ref{fig:decomposition}, Table~\ref{tab:table2_effects}). Changing the
+encoder alone, with the mass axis binned in both arms, is worth $+0.0377$
+($+0.0331$ to $+0.0424$; $90.6\%$ of targets). Changing the mass axis alone, with
+the same encoder on both sides, is worth $+0.0268$ ($+0.0221$ to $+0.0317$;
+$74.8\%$ of targets). The two components sum to the joint effect
+exactly, as they must, since each target's contribution enters both sides
+linearly.
+
+Fifty-eight per cent of what a two-arm comparison would attribute to the spectral
+representation is therefore the encoder. Both components are real: each interval
+excludes zero by a wide margin and each improves a clear majority of targets
+individually. But they are not what the headline number suggests, and the larger
+of the two is the one that has nothing to do with how the spectrum is represented.
+
+\input{figures/table2_effects.tex}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/fig3_decomposition.pdf}
+\caption{Decomposing the gain. \textbf{Left}: held-out macro AUPRC for the four
+arms; small dots are individual seeds, large dots their mean. \textbf{Right}: what
+each single change is worth, paired over targets with $95\%$ bootstrap intervals;
+small dots are the per-seed effect sizes.}
+\label{fig:decomposition}
+\end{figure}
+
+\hd{What the ordering does and does not support}
+The encoder is the largest of the three effects, and this survives replication: it
+exceeds the mass-axis effect in all three seeds (by $+0.0139$, $+0.0154$ and
+$+0.0033$) and the aggregation effect in all three (by $+0.0051$, $+0.0040$ and
+$+0.0074$). We regard that as established at this sample size.
+
+The ordering of the remaining two is not. The mass axis averages $+0.0268$ and
+aggregation $+0.0322$, which would place the representation last, but the sign of
+that difference reverses under one of the three seeds ($-0.0089$, $-0.0114$,
+$+0.0041$). Three seeds cannot separate effects that differ by $0.0054$ when the
+per-seed spread of the difference is of the same magnitude. We therefore claim
+only that the mass axis and the pooling strategy are of comparable value, and that
+both are smaller than the encoder. A reader wanting the two ranked will need more
+replicates than we have run.
+
+This matters for how the experiment should be read. It would be convenient to
+report that the spectral representation is the smallest of the three effects; the
+data do not support that, and the conservative statement --- that it is not the
+largest --- is the one the replication licenses.
+
+\hd{How much precision is needed}
+The rounding control prices one particular grid. Sweeping the grid width, with the
+encoder and parameter count fixed throughout, prices precision as a function of how
+much of it is retained (Fig.~\ref{fig:binwidth},
+Table~\ref{tab:table3_binwidth}). At $0.5$, $0.25$ and $0.1$~Da the model sits
+between $0.0801$ and $0.0867$, a range of $0.0066$ --- under twice the
+full-precision arm's seed standard deviation of $0.0039$, and unordered within
+itself; coarsening from $0.1$ to $0.5$~Da costs nothing measurable.
+Below that the curve moves: $0.05$~Da reaches $0.0909$ and $0.01$~Da reaches
+$0.1030$, closing $65\%$ of the distance to full precision. Full precision reaches
+$0.1119$, so even a $10$~mDa grid --- fine enough to separate the isobaric
+fragments that motivate the whole argument --- leaves roughly a third of the
+precision benefit on the table.
+
+Two cautions. Each width was run once, and the non-monotonic dip at $0.25$ and
+$0.1$~Da spans $0.0066$, under twice the full-precision arm's seed standard
+deviation of $0.0039$ and therefore unremarkable across five single runs; we read
+it as noise rather than structure. We tested whether it might
+instead be an aliasing artefact --- the sinusoidal basis has wavelengths that are
+integer divisors of these grid spacings, which would render some channels constant
+--- but only one to three of thirty-two channels are affected at any width and the
+count does not track performance ($r = -0.26$), so we discount that explanation.
+Resolving the middle of this curve would need seeds at each width.
+
+\input{figures/table3_binwidth.tex}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.66\linewidth]{figures/fig4_binwidth.pdf}
+\caption{Bin-width sweep. \textbf{Top}: macro AUPRC against grid width, one run per
+width; the band is the full-precision arm's seed spread. \textbf{Bottom}: the
+fraction of peaks absorbed into an already-occupied bin at each width.}
+\label{fig:binwidth}
+\end{figure}
+
+\hd{What binning removes}
+The mechanism is visible before any model is fitted
+(Fig.~\ref{fig:representation}). Of the $93{,}611$ evaluation peaks that survive
+preprocessing and are seen by every arm, $35{,}116$ --- $37.5\%$ --- fall into a
+$0.5$~Da bin already occupied by another peak from the same spectrum. The loss
+falls with the grid: $33.1\%$ at $0.1$~Da, $25.9\%$ at $0.05$~Da, $7.5\%$ at
+$0.01$~Da. The observed mass defect spans $[-0.47, +0.47]$~Da with clear
+compositional structure, and enumerating plausible CHNOS compositions within
+$10$~ppm places $328$ candidate fragment formulas inside a single $0.5$~Da bin at
+$m/z\,300$.
+
+The denominator deserves a note, because the obvious one is misleading. The raw
+test files contain $400{,}707$ peaks, of which $60.7\%$ collide under $0.5$~Da
+binning. Preprocessing removes $76.6\%$ of those as sub-threshold before any arm is
+trained, and the removed peaks are disproportionately the dense low-intensity ones
+that collide. Quoting the raw figure would charge binning for peaks no model ever
+receives, so we report absorption over the cleaned spectra throughout.
+
+Comparing the absorption curve with the performance curve is instructive, and
+slightly deflationary. Going from $0.5$ to $0.1$~Da removes about a tenth of the
+absorption and buys nothing measurable; going from $0.05$ to $0.01$~Da removes
+about two thirds of the remainder and buys $+0.0121$. Peak absorption is therefore
+not a sufficient account of the cost on its own: what the model gains below
+$0.05$~Da tracks the recovery of the defect value itself more closely than it
+tracks the recovery of peak count.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/fig7_representation.pdf}
+\caption{Information discarded by $0.5$~Da binning, over the cleaned evaluation
+spectra. \textbf{Left}: mass defect against fragment $m/z$. \textbf{Right}:
+fraction of peaks absorbed into an already-occupied bin, by mass range; the dashed
+line marks the overall $37.5\%$.}
+\label{fig:representation}
+\end{figure}
+
+\hd{Threats to validity}
+Three limits bound what we claim. The experiments use two of twenty-one corpus row
+groups, approximately a tenth of the available data; we expect the ordering to hold
+at scale but the absolute values will move. Three seeds per arm is enough to
+establish that the encoder effect is the largest and that both components are
+non-zero, and not enough to rank the mass axis against aggregation. And the sweep
+carries one run per width, so its middle is unresolved; only its endpoints, which
+are separated by several seed standard deviations, should be read as findings.
+
+We also note what the design does not control. M1R gives the binned mass axis the
+better encoder, which is the comparison that isolates precision, but it does not
+give the binned \emph{vector} that encoder --- a Transformer over bin-indexed
+tokens is not the same object as a perceptron over a dense vector, and some of what
+we attribute to the encoder may be the switch from a dense to a sparse
+representation of the same information. Separating those would need a fifth arm.

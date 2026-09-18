@@ -1,0 +1,7 @@
+bin width (Da),peaks absorbed,macro AUPRC,share of the 0.5 Da gap closed
+0.5,37.5%,0.0867,0%
+0.25,36.8%,0.0818,-19%
+0.1,33.1%,0.0801,-26%
+0.05,25.9%,0.0909,17%
+0.01,7.5%,0.1030,65%
+full precision,0.0%,0.1119,100%

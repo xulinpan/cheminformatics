@@ -1,0 +1,6 @@
+contrast,isolates,$\Delta$ AUPRC,95\% CI,targets improved,SD over seeds
+M1R $-$ M0,encoder,+0.0377,"[+0.0331, +0.0424]",90.6%,0.0019
+M1 $-$ M1R,mass axis,+0.0268,"[+0.0221, +0.0317]",74.8%,0.0049
+M2 $-$ M1,aggregation,+0.0322,"[+0.0275, +0.0370]",79.5%,0.0035
+M1 $-$ M0,encoder and mass axis,+0.0645,"[+0.0576, +0.0713]",92.5%,--
+M2 $-$ M0,all three,+0.0966,"[+0.0873, +0.1064]",94.1%,--

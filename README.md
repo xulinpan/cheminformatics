@@ -25,36 +25,45 @@ carries elemental composition.
 
 ## The result
 
-Two models were trained on the CASMI 2026 corpus, holding data, structural targets,
-scaffold-grouped splits, optimiser, schedule and evaluation fixed. The binned arm
-was given 63% *more* parameters, so any deficit cannot be attributed to capacity.
+Four arms on the CASMI 2026 corpus, each differing from the one above it in a
+single respect, three training seeds each, on 8,692 held-out molecules. Chance
+macro AUPRC is 0.0093 over 477 scored targets.
 
-| rung | encoder | pooling | parameters | macro AUPRC | macro AUROC | micro AUPRC | Brier |
-|------|---------|---------|-----------:|------------:|------------:|------------:|------:|
-| M0 | 0.5 Da bins | mean | 1,164,560 | 0.0476 | 0.7832 | 0.2905 | 0.00704 |
-| M1 | peak set | mean | 712,336 | 0.1119 | 0.8734 | 0.3842 | 0.00653 |
-| M2 | peak set | hierarchical | 829,584 | 0.1460 | 0.8861 | 0.4088 | 0.00639 |
+| arm | mass axis | encoder | pooling | parameters | macro AUPRC | SD over seeds |
+|-----|-----------|---------|---------|-----------:|------------:|--------------:|
+| M0 | 0.5 Da bins | MLP | mean | 1,164,560 | 0.0478 | 0.0006 |
+| M1R | 0.5 Da bins | Transformer | mean | 712,336 | 0.0854 | 0.0014 |
+| M1 | full precision | Transformer | mean | 712,336 | 0.1122 | 0.0039 |
+| M2 | full precision | Transformer | hierarchical | 829,584 | 0.1444 | 0.0016 |
 
-Chance macro AUPRC is 0.0093 over 477 scored targets on 8,692 held-out molecules.
+M1R is the control that makes the experiment mean anything: it gives the binned
+mass axis the peak-set encoder, so the encoder and the mass axis separate.
 
-| comparison | change | Δ AUPRC | 95% CI | targets improved |
-|------------|--------|--------:|--------|-----------------:|
-| M1 − M0 | representation | +0.0644 | [+0.0570, +0.0722] | 89.7% |
-| M2 − M1 | aggregation | +0.0341 | [+0.0277, +0.0407] | 72.3% |
-| M2 − M0 | both | +0.0984 | [+0.0885, +0.1090] | 94.3% |
+| contrast | isolates | Δ AUPRC | 95% CI | targets improved |
+|----------|----------|--------:|--------|-----------------:|
+| M1R − M0 | encoder | +0.0377 | [+0.0331, +0.0424] | 90.6% |
+| M1 − M1R | mass axis | +0.0268 | [+0.0221, +0.0317] | 74.8% |
+| M2 − M1 | aggregation | +0.0322 | [+0.0275, +0.0370] | 79.5% |
+| M1 − M0 | encoder and mass axis | +0.0645 | [+0.0576, +0.0713] | 92.5% |
 
-The representation change is 1.9× the architectural change measured on the same
-molecules with the same targets. Separately, 37.5% of the 93,611 evaluation peaks
-that survive preprocessing fall into a 0.5 Da bin already occupied by another peak
-from the same spectrum, and are therefore absorbed. (The raw files give 60.7%, but
-preprocessing discards 76.6% of those peaks before either arm is trained, so that
-figure charges binning for peaks no model receives.)
+**58% of what a two-arm comparison would attribute to the spectral representation
+is the encoder.** The encoder effect is the largest of the three and exceeds both
+others in all three seeds. The mass axis and aggregation are of comparable size and
+their ordering reverses under one seed, so we do not rank them.
+
+A bin-width sweep at fixed encoder and parameter count shows precision paying only
+below 0.05 Da: 0.5, 0.25 and 0.1 Da all sit within noise of each other, 0.01 Da
+closes 65% of the distance to full precision, and full precision closes the rest.
+Absorption of peaks into occupied bins falls from 37.5% at 0.5 Da to 7.5% at
+0.01 Da — the two curves do not track each other, so peak absorption alone does not
+account for the cost.
 
 ## Repository layout
 
 ```
-manuscript/      paperA.tex, paperA.pdf and the figures and tables they use
+manuscript/      paperA.tex, results_paperA.tex, and the figures and tables they use
 src/dbf2/        the model package: preprocessing, encoders, training, evaluation
+scripts/         seed/sweep analysis and the figure and table builders
 results/         machine-readable numbers behind every figure and table
 requirements.txt pinned environment
 ```
@@ -95,22 +104,22 @@ reduction the representation advantage disappears.
 The manuscript's own limitations, stated here so that anyone reading the code knows
 what has and has not been established:
 
-1. **The two arms differ in encoder as well as representation** (an MLP over the
-   binned vector, a Transformer over the peak set). The clean isolation is rung
-   **M1R**, implemented in `src/dbf2/dataset.py` (`quantise_merge`): each peak's
-   *m/z* is rounded to its bin centre, collisions are merged, and the result goes
-   through the *identical* Transformer at an identical parameter count. The code
-   and its tests are in place; **the run itself is still outstanding**, and its
-   result determines whether the paper's central claim holds.
-2. **One training run per arm.** The reported intervals bootstrap over targets and
-   do not capture initialisation variance. Seed replication is outstanding.
-3. **The mass-defect mechanism is argued but not ablated.** Removing the explicit
-   defect channel and the sub-Dalton wavelengths, with peak identity otherwise
-   intact, would test it directly.
+1. **Three seeds is not enough to rank the mass axis against aggregation.** It is
+   enough to establish that the encoder effect is the largest and that all three
+   components are non-zero. Ranking the smaller two needs more replicates.
+2. **The bin-width sweep is single-seed**, so its middle is unresolved; only its
+   endpoints are separated by more than the seed spread.
+3. **M1R does not control for dense versus sparse encoding.** It gives the binned
+   mass axis the better encoder, which isolates precision, but a Transformer over
+   bin-indexed tokens is not a perceptron over a dense vector. Some of the encoder
+   effect may be that switch. A fifth arm would separate them.
 4. **The endpoint is a proxy.** BRICS substructure AUPRC is an intermediate; whether
    the gain propagates to top-*k* structure retrieval is not shown here.
 5. **Scale.** Experiments use two of twenty-one corpus row groups, roughly a tenth
    of the available data.
+6. **The manuscript text has not caught up.** `manuscript/results_paperA.tex` is
+   current. `manuscript/paperA.tex` still argues the pre-control claim and needs
+   rewriting around the decomposition.
 
 ## Citing
 
