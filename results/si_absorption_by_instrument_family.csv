@@ -1,0 +1,5 @@
+instrument_family,spectra,peaks,survive,absorbed_pct,peaks_per_spectrum
+Orbitrap,48877,2571003,1929751,24.942,52.601
+QTOF,24448,1153255,913235,20.812,47.172
+other,1920,61820,49680,19.638,32.198
+unknown,99,11088,7501,32.35,112.0
