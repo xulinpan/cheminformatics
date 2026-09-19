@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\caption{The four arms on the open corpus, each differing from the one above it in a single respect. Macro AUPRC on 10,058 held-out molecules, mean over three seeds. Chance is 0.0085 over 433 scored targets.}
+\label{tab:table1_arms_open}
+\begin{tabular}{l r r r r r r}
+\toprule
+arm & mass axis & encoder & pooling & parameters & macro AUPRC & SD over seeds \\
+\midrule
+M0 & 0.5 Da bins & MLP & mean & 1,164,560 & 0.1130 & 0.0012 \\
+M1R & 0.5 Da bins & Transformer & mean & 712,336 & 0.1567 & 0.0025 \\
+M1 & full precision & Transformer & mean & 712,336 & 0.1709 & 0.0022 \\
+M2 & full precision & Transformer & hierarchical & 829,584 & 0.1888 & 0.0015 \\
+\bottomrule
+\end{tabular}
+\end{table}

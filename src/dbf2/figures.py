@@ -485,8 +485,11 @@ def _tex(v) -> str:
     t = str(v)
     for k, r in _TEX_MAP.items():
         t = t.replace(k, r)
+    # Idempotent: strip any escaping the caller already applied before adding our
+    # own. Escaping twice turns "\\%" into a line break followed by a comment,
+    # which silently swallows the rest of a row or caption.
     for ch in ("%", "&", "#", "_"):
-        t = t.replace(ch, "\\" + ch)
+        t = t.replace("\\" + ch, ch).replace(ch, "\\" + ch)
     return t
 
 
