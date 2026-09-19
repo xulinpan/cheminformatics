@@ -47,12 +47,11 @@ so each of the encoder and the mass axis --- the precision of the $m/z$ scale --
 changes with the other held constant. On an openly licensed corpus of $414{,}992$ spectra from GNPS, MassBank
 and MoNA spanning $66$ instrument types, over $10{,}058$ held-out molecules and
 three seeds, replacing a $0.5$~Da binned baseline with a full-precision peak-set
-model raised macro AUPRC from $0.1130$ to $0.1709$ against a chance level of
-$0.0085$. The control splits that paired gain of $+0.0579$ into $+0.0438$ ($95\%$ CI
+model raised macro AUPRC from $0.1130$ to $0.1709$ (chance $0.0085$). The control splits that paired gain of $+0.0579$ into $+0.0438$ ($95\%$ CI
 $+0.0364$ to $+0.0517$) for the encoder and $+0.0142$ ($+0.0097$ to $+0.0188$) for
 the mass axis: $76\%$ is architectural, and the ranking encoder $>$ aggregation $>$
-mass axis holds in every seed. Repeating the ladder on a single-library corpus that
-is $99\%$ one instrument gives the same result with the encoder at $58\%$.
+mass axis holds in every seed. Repeating the ladder on a single-library corpus that is
+$99\%$ one instrument gives the encoder $58\%$.
 Improvements measured against binned baselines should not be read as evidence about
 spectral representation. Code:
 \url{https://github.com/xulinpan/cheminformatics}.
@@ -61,9 +60,9 @@ spectral representation. Code:
 \hd{Scientific contribution}
 \small
 We introduce a rounding control that isolates the spectral representation from the
-encoder in MS/MS substructure prediction, an isolation no previous comparison
-achieves because changing the representation ordinarily forces an architecture
-change. Across three seeds and two corpora of sharply different acquisition
+encoder in MS/MS substructure prediction. Existing benchmarks compare featurizations
+bundled with the encoders that read them, because changing the representation
+ordinarily forces an architecture change; the control removes that coupling. Across three seeds and two corpora of sharply different acquisition
 diversity, the encoder accounts for $76\%$ and $58\%$ of the gain a two-arm
 comparison credits to the representation, and is in both cases the largest of the
 three effects we measure. The consequence for practice is that performance measured
@@ -105,19 +104,41 @@ carries elemental composition.
 The field has since moved away from naive binning. CSI:FingerID scores against
 fragmentation trees over exact masses, MIST tokenises peaks by chemical formula,
 DreaMS operates on peak lists, and TransExION aligns fragments by nominal mass with
-the defect embedded as a separate channel \cite{buithi2024transexion}. These
+the defect embedded as a separate channel \cite{buithi2024transexion}; the
+direction is surveyed in \cite{beck2024mlms}, and the convention of discretising a
+spectrum onto a fixed grid persists well beyond MS/MS \cite{tan2025clams}, and how
+best to present a spectrum to a model remains open enough that serialising peaks as
+text for a language model is an active line of enquiry \cite{wang2026llm}. These
 systems outperform binned baselines, and the improvement is routinely read as
 evidence that the representation was the problem.
+
+Binning has not gone unexamined. Gin\'e et al. \cite{gine2026benchmark} benchmark
+featurization strategies for structure annotation across a large grid of models,
+comparing adaptive binning and spectrum hashing against learned embeddings, and
+report that retrieval degrades markedly as the mass tolerance is relaxed. Working
+on chemical-similarity prediction rather than structure annotation, de Jonge et al.
+\cite{dejonge2026crossmode} settle on $0.1$~Da bins and report that finer bins did
+not improve performance. These are the two most direct empirical statements
+available about what mass precision is worth, and they do not agree with each other
+--- which is itself a reason to ask the question in a form that admits a clean
+answer.
 
 That reading does not follow from the experiments, and the reason is structural
 rather than careless. A binned vector and a peak set are different kinds of object:
 the first is dense and fixed-length, the second sparse and variable-length and
 permutation-invariant. No architecture reads both. Abandoning bins therefore forces
-a change of encoder, and every published comparison of a peak-level model against a
-binned baseline varies the representation and the architecture together, usually
-alongside differences in training data and objective. The two contributions have
-never been separated, so the field's estimate of what the representation is worth
-rests on experiments that cannot supply one.
+a change of encoder, and a comparison of a peak-level model against a binned
+baseline varies the representation and the architecture together, usually alongside
+differences in training data and objective.
+
+This applies to benchmarks as well as to individual systems. A study that compares
+many featurizations \cite{gine2026benchmark} measures each one bundled with the
+encoder that reads it --- adaptive binning with a network that takes a dense
+vector, a learned embedding with the architecture that produced it --- and so
+estimates the joint effect of representation and architecture at many points rather
+than separating them at any one. That is the right design for choosing a pipeline
+and the wrong one for attributing a gain. What is missing is not breadth but a
+contrast in which the mass axis moves and nothing else does.
 
 This paper supplies the separation. The obstacle above is real but not
 insurmountable: while a peak-set encoder cannot read a binned vector, it can read
@@ -160,7 +181,10 @@ $372{,}200$ spectra over $50{,}287$ structures and $24{,}627{,}256$ peaks.
 
 Structures were assigned to five folds by grouping generic Murcko scaffolds, with
 acyclic structures falling back to grouping by their own identifier, and fold sizes
-balanced greedily. Folds 2--4 were used for fitting, fold 1 for model selection, and
+balanced greedily. Scaffold grouping is stricter than a random split and follows the
+generalisation-demanding practice argued for in MassSpecGym
+\cite{bushuiev2024massspecgym}; we did not adopt that benchmark's own split because
+our corpora are selected by source library rather than drawn from it. Folds 2--4 were used for fitting, fold 1 for model selection, and
 fold 0 was held out; all reported numbers are on fold 0 ($10{,}058$ molecules on the
 open corpus, $8{,}692$ on the single-library corpus).
 
@@ -320,6 +344,19 @@ choice, TransExION's included, of embedding the defect alongside a coarsely quan
 nominal mass: on our evidence the resolution of that channel matters more than its
 presence.
 
+It also disagrees with a recent result we should not paper over. de Jonge et al.
+\cite{dejonge2026crossmode} adopt $0.1$~Da bins for MS2DeepScore~2.0 and report that
+finer bins did not improve performance; our sweep finds nothing measurable between
+$0.5$ and $0.1$~Da, agreeing with them over that range, but a gain of $+0.0121$
+between $0.05$ and $0.01$~Da, disagreeing below it. Three explanations seem live.
+The tasks differ --- chemical-similarity prediction between two spectra may be
+satisfied by coarser features than inferring which substructures a molecule
+contains, since the former needs only that two spectra of similar molecules land
+near each other. The architectures differ. And our sweep is single-seed, so the
+disagreement may be ours. We cannot adjudicate this from our data, and flag it
+because a reader comparing the two papers will notice, and because the question of
+what bin width suffices is evidently not settled by either.
+
 The practical consequence concerns controls. A method evaluated against a binned
 baseline is compared against an arm handicapped in two ways at once, and on this
 evidence the larger handicap is architectural. A paper reporting a gain over such a
@@ -420,6 +457,40 @@ spectra. J Cheminform 13:84
 \bibitem{bushuiev2025dreams} Bushuiev R, Bushuiev A, Samusevich R, Brungs C,
 Sivic J, Pluskal T (2025) Self-supervised learning of molecular representations from
 millions of tandem mass spectra using DreaMS. Nat Biotechnol
+
+\bibitem{gine2026benchmark} Gin\'e R, P\'erez-L\'opez I, Badia JM, Capellades J,
+Yanes O (2026) Benchmarking MS/MS featurization strategies for machine
+learning-driven metabolite structure annotation. J Am Soc Mass Spectrom
+37:1550--1561
+
+\bibitem{dejonge2026crossmode} de Jonge NF, Chekmeneva E, Schmid R, Joas D,
+Truong L-J, van der Hooft JJJ, Huber F (2026) Cross ionization mode chemical
+similarity prediction between tandem mass spectra in metabolomics. Nat Commun
+17:2483
+
+\bibitem{bushuiev2024massspecgym} Bushuiev R, Bushuiev A, de Jonge NF, Young A,
+Kretschmer F, Samusevich R, Heirman J, Wang F, Zhang L, D\"uhrkop K, Ludwig M,
+Haupt NA, Kalia A, Brungs C, Schmid R, Greiner R, Wang B, Wishart DS, Liu L-P,
+Rousu J, Bittremieux W, Rost H, Mak TD, Hassoun S, Huber F, van der Hooft JJJ,
+Stravs MA, B\"ocker S, Sivic J, Pluskal T (2024) MassSpecGym: a benchmark for the
+discovery and identification of molecules. In: Advances in Neural Information
+Processing Systems 37, Datasets and Benchmarks Track
+
+\bibitem{kind2007rules} Kind T, Fiehn O (2007) Seven Golden Rules for heuristic
+filtering of molecular formulas obtained by accurate mass spectrometry. BMC
+Bioinformatics 8:105
+
+\bibitem{beck2024mlms} Beck AG, Muhoberac M, Randolph CE, Beveridge CH,
+Wijewardhane PR, Kentt\"amaa HI, Chopra G (2024) Recent developments in machine
+learning for mass spectrometry. ACS Meas Sci Au 4:233--246
+
+\bibitem{wang2026llm} Wang Y, Wei L, Liu L, Xu H, Ling H (2026) How well can
+off-the-shelf LLMs elucidate molecular structures from mass spectra using
+chain-of-thought reasoning? J Cheminform 18:114
+
+\bibitem{tan2025clams} Tan X (2025) A transformer based generative chemical
+language AI model for structural elucidation of organic compounds. J Cheminform
+17:103
 
 \bibitem{buithi2024transexion} Bui-Thi D, Liu Y, Lippens JL, Laukens K, De Vijlder T
 (2024) TransExION: a transformer based explainable similarity metric for comparing
