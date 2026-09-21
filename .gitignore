@@ -31,3 +31,7 @@ prepared/
 # OS
 .DS_Store
 Thumbs.db
+
+# editable-install metadata
+src/*.egg-info/
+*.egg-info/

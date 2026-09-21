@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dbf2"
+version = "0.2.0"
+description = "Controls that decompose the advantage peak-level models hold over binned baselines in MS/MS substructure prediction"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Xulin Pan", email = "xulinpanias@gmail.com" },
+    { name = "Chuanming Wang" },
+]
+keywords = ["mass-spectrometry", "tandem-ms", "cheminformatics",
+            "structure-annotation", "ablation", "spectral-representation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+
+# The rounding control and the conditioning-parity check are pure numpy. Keep the
+# base install that light so anyone can apply them to their own model without
+# taking on this project's training stack.
+dependencies = ["numpy>=1.24"]
+
+[project.optional-dependencies]
+# Everything needed to train the arms and reproduce the paper.
+full = [
+    "torch>=2.1",
+    "pandas>=2.0",
+    "pyarrow>=14.0",
+    "rdkit>=2023.9.1",
+    "matplotlib>=3.7",
+]
+test = ["pytest>=7.4"]
+
+[project.urls]
+Repository = "https://github.com/xulinpan/cheminformatics"
+
+[project.scripts]
+dbf2 = "dbf2.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["dbf2*"]
+
+[tool.pytest.ini_options]
+testpaths = ["src/dbf2/tests"]

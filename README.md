@@ -114,14 +114,64 @@ The covariate correction replicates too, and scales the way it should: condition
 M0 was worth +0.0288 on the corpus with 66 instrument types and 112 adducts, and
 +0.0142 on the one with two and 16.
 
+## Using the controls on your own model
+
+The two controls are the transferable part of this work, so they are packaged
+separately from everything else. `dbf2.control` is pure numpy — no torch, no
+rdkit, no data layout, no trained weights — and works against whatever model you
+already have.
+
+```bash
+pip install git+https://github.com/xulinpan/cheminformatics
+```
+
+**The rounding control.** Degrade the mass axis in place and pass the result
+through your existing peak encoder, so the representation moves and the
+architecture does not:
+
+```python
+from dbf2.control import quantise_spectrum
+
+mz, intensity, precursor = quantise_spectrum(mz, intensity, precursor, width=0.5)
+```
+
+Use `quantise_spectrum`, not `quantise_peaks`. It also snaps the precursor to the
+grid, without which the neutral loss `precursor - mz` hands every token the
+precursor's full-precision mass defect and the control quietly understates what
+the mass axis is worth.
+
+**The conditioning-parity check.** The confound that cost this paper its original
+headline was silent: the binned baseline's encoder accepted the acquisition
+covariates and discarded them. Nothing crashed and the numbers looked plausible.
+
+```python
+from dbf2.control import check_conditioning_parity
+
+check_conditioning_parity(
+    {"M0": predict_m0, "M1R": predict_m1r, "M1": predict_m1},
+    {"collision_energy": 10.0, "adduct": "[M+H]+"},
+    {"collision_energy": 90.0, "adduct": "[M+Na]+"},
+)   # raises, naming every arm whose output does not move
+```
+
+Run it before trusting any contrast between arms that are nominally given the same
+side information. If your conditioning path is zero-initialised — FiLM and adaptive
+layer-norm usually are — perturb it off initialisation first, or the check passes
+vacuously on an untrained model.
+
+`absorbed_fraction(mz, width)` reports what a given grid costs before any model is
+fitted: the share of peaks that land in an already-occupied cell.
+
 ## Repository layout
 
 ```
-manuscript/      paperA.tex, results_paperA.tex, and the figures and tables they use
-src/dbf2/        the model package: preprocessing, encoders, training, evaluation
-scripts/         seed/sweep analysis and the figure and table builders
-results/         machine-readable numbers behind every figure and table
-requirements.txt pinned environment
+manuscript/           the manuscript, its figures and tables, and superseded drafts
+src/dbf2/control.py   the two controls, pure numpy, the reusable part
+src/dbf2/             the rest of the model package: preprocessing, encoders, training
+scripts/              seed/sweep analysis and the figure and table builders
+results/              machine-readable numbers behind every figure and table
+pyproject.toml        package metadata; `full` extra adds torch, rdkit and pandas
+requirements-lock.txt the exact environment the reported runs used
 ```
 
 `results/figure_data.json` contains the values plotted in each figure, so the
@@ -131,8 +181,8 @@ figures can be checked against the numbers without rerunning anything.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-pip install rdkit                    # not pinned; version-sensitive on some platforms
+pip install -e ".[full,test]"        # controls only: pip install -e .
+# requirements-lock.txt holds the exact versions the reported runs used
 ```
 
 Build the openly licensed subset, then prepare and train. `--dataset open` reads
@@ -165,10 +215,13 @@ for w in 0.25 0.1 0.05 0.01; do
 done
 ```
 
-`python -m pytest src/dbf2/tests` runs the unit tests — 50 tests, no data required.
-Fourteen of them cover the rounding control specifically, including that M1R and M1
-have identical parameter counts and that their configurations differ in exactly one
-field.
+`python -m pytest src/dbf2/tests` runs the unit tests — 90 tests, no data required.
+Twenty-three cover the public control API, including that quantising without
+snapping the precursor leaks the precursor's mass defect back through the neutral
+loss, and that the parity check names every arm which ignores its covariates.
+Fourteen more cover the rounding control inside the model, including that M1R and
+M1 have identical parameter counts and that their configurations differ in exactly
+one field.
 
 ### Data
 
