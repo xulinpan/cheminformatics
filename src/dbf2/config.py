@@ -82,6 +82,12 @@ class ModelConfig:
     n_heads: int = 8
     d_ff: int = 256
     dropout: float = 0.1
+    # Set False to drop self-attention from every block, leaving a position-wise
+    # perceptron over the same peak tokens with the same conditioning. This is
+    # rung M1D: it holds the mass axis and the token interface fixed against M1R
+    # and removes only the attention, so M1D - M0 prices the dense-to-sparse
+    # switch and M1R - M1D prices attention.
+    attention: bool = True
     fourier_scales: int = 32
     lambda_min: float = 2e-3                 # shortest wavelength, Da (resolves mass defect)
     lambda_max: float = 1e3
@@ -219,8 +225,17 @@ class Config:
         elif rung == "M1R":     # M1 with the mass axis rounded to the M0 bin grid
             c.model.encoder, c.model.pooling = "peakset", "mean"
             c.model.quantise_mz = c.model.bin_width
+        elif rung == "M1D":     # M1R with attention removed: tokens, no attention
+            c.model.encoder, c.model.pooling = "peakset", "mean"
+            c.model.quantise_mz = c.model.bin_width
+            c.model.attention = False
+            # widen the feed-forward so the arm without attention is not also the
+            # arm with fewer parameters. Removing attention frees 66,048 weights
+            # per block; 548 returns slightly more than that, leaving M1D just
+            # above M1R (714,528 against 712,336) rather than below it.
+            c.model.d_ff = 548
         elif rung in ("M2", "M3", "M4", "M5"):
             c.model.encoder, c.model.pooling = "peakset", "hierarchical"
         else:
-            raise ValueError(f"unknown ablation rung {rung!r}; expected M0, M1, M1R, M2..M5")
+            raise ValueError(f"unknown ablation rung {rung!r}; expected M0, M1, M1R, M1D, M2..M5")
         return c

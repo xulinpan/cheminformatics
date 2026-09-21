@@ -140,3 +140,77 @@ def test_encoder_rounds_the_precursor():
     c = free(mz, inten, torch.tensor([342.1617], dtype=torch.float64), mask, cov)
     d = free(mz, inten, torch.tensor([342.4988], dtype=torch.float64), mask, cov)
     assert not torch.allclose(c, d, atol=1e-6)
+
+
+# --------------------------------------------------------------- rung M1D
+# M1D removes self-attention while holding the mass axis and the token interface
+# fixed against M1R, so that M1D - M0 prices the dense-to-sparse switch and
+# M1R - M1D prices attention. These tests pin down that it changes only that.
+
+def test_M1D_differs_from_M1R_only_in_attention_and_width():
+    a = Config.ablation("M1R", ".").model
+    b = Config.ablation("M1D", ".").model
+    differing = {k for k in vars(a) if getattr(a, k) != getattr(b, k)}
+    assert differing == {"attention", "d_ff"}, differing
+    assert a.quantise_mz == b.quantise_mz > 0      # same binned mass axis
+    assert b.attention is False
+
+
+def test_M1D_is_not_the_smaller_arm():
+    """A control that also had fewer parameters would reintroduce the confound
+    it exists to remove."""
+    from dbf2.model import DeepBayesFrag
+    n = {}
+    for rung in ("M1D", "M1R"):
+        cfg = Config.ablation(rung, ".")
+        cfg.model.n_presence, cfg.model.n_count = 512, 88
+        torch.manual_seed(0)
+        n[rung] = sum(p.numel() for p in DeepBayesFrag(cfg.model).parameters())
+    assert n["M1D"] >= n["M1R"], n
+
+
+def test_M1D_blocks_carry_no_attention_weights():
+    from dbf2.encoder import PeakSetEncoder
+    enc = PeakSetEncoder(Config.ablation("M1D", ".").model)
+    for blk in enc.blocks:
+        assert not hasattr(blk, "qkv") and not hasattr(blk, "out")
+        assert blk.attention is False
+
+
+def test_M1D_tokens_do_not_exchange_information():
+    """The point of the arm. Run the block stack directly on token embeddings:
+    with attention removed, a token's output must not depend on what other
+    tokens are present. With attention on, it must."""
+    from dbf2.encoder import FiLMBlock
+    cfg = Config.ablation("M1D", ".").model
+    torch.manual_seed(0)
+    blk = FiLMBlock(cfg.d_model, cfg.n_heads, cfg.d_ff, cfg.d_cov, 0.0,
+                    attention=cfg.attention).eval()
+    cov = torch.zeros(1, cfg.d_cov)
+    torch.manual_seed(1)
+    x = torch.randn(1, 3, cfg.d_model)
+    pad = torch.zeros(1, 3, dtype=torch.bool)
+    both = blk(x, cov, pad)
+    alone = blk(x[:, :1], cov, pad[:, :1])
+    assert torch.allclose(both[:, 0], alone[:, 0], atol=1e-6)
+
+    acfg = Config.ablation("M1R", ".").model
+    torch.manual_seed(0)
+    ablk = FiLMBlock(acfg.d_model, acfg.n_heads, acfg.d_ff, acfg.d_cov, 0.0,
+                     attention=True).eval()
+    ax = torch.randn(1, 3, acfg.d_model)
+    a_both = ablk(ax, cov, pad)
+    a_alone = ablk(ax[:, :1], cov, pad[:, :1])
+    assert not torch.allclose(a_both[:, 0], a_alone[:, 0], atol=1e-6)
+
+
+def test_M1D_pools_peaks_rather_than_a_cls_token():
+    """A CLS token that attends to nothing would learn nothing, so the encoder
+    must fall back to a masked mean over the peak tokens."""
+    from dbf2.encoder import PeakSetEncoder
+    cfg = Config.ablation("M1D", ".").model
+    enc = PeakSetEncoder(cfg).eval()
+    mz = torch.tensor([[67.25, 121.25]], dtype=torch.float64)
+    h = enc(mz, torch.ones(1, 2), torch.tensor([342.25], dtype=torch.float64),
+            torch.ones(1, 2, dtype=torch.bool), torch.zeros(1, cfg.d_cov))
+    assert h.shape == (1, cfg.d_model) and torch.isfinite(h).all()

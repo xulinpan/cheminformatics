@@ -182,7 +182,11 @@ established.
    should be read as findings and its 0.05 Da threshold may not transfer.
 7. **M1R does not separate dense from sparse encoding.** A Transformer over
    bin-indexed tokens is not a perceptron over a dense vector; some of the encoder
-   effect may be that switch. A fifth arm would resolve it.
+   effect may be that switch. Rung **M1D** now exists to resolve it — same binned
+   mass axis and same peak tokens as M1R, with self-attention removed and the
+   feed-forward widened so it is not also the smaller arm (714,528 against
+   712,336). `M1D − M0` prices the dense-to-sparse switch and `M1R − M1D` prices
+   attention. **The runs are still outstanding.**
 8. **No external baseline, and the endpoint is a proxy.** Every arm here is ours, and
    whether the gain propagates to top-*k* structure retrieval is not shown.
 

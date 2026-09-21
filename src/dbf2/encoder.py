@@ -101,19 +101,22 @@ class FiLMBlock(nn.Module):
     off the heap.
     """
 
-    def __init__(self, d: int, n_heads: int, d_ff: int, d_cov: int, dropout: float):
+    def __init__(self, d: int, n_heads: int, d_ff: int, d_cov: int, dropout: float,
+                 attention: bool = True):
         super().__init__()
         if d % n_heads:
             raise ValueError(f"d_model {d} must be divisible by n_heads {n_heads}")
         self.n_heads, self.d_head = n_heads, d // n_heads
-        self.norm1 = nn.LayerNorm(d, elementwise_affine=False)
+        self.attention = attention
+        self.norm1 = nn.LayerNorm(d, elementwise_affine=False) if attention else None
         self.norm2 = nn.LayerNorm(d, elementwise_affine=False)
-        self.qkv = nn.Linear(d, 3 * d)
-        self.out = nn.Linear(d, d)
+        if attention:
+            self.qkv = nn.Linear(d, 3 * d)
+            self.out = nn.Linear(d, d)
         self.p_attn = dropout
         self.ff = nn.Sequential(nn.Linear(d, d_ff), nn.GELU(),
                                 nn.Dropout(dropout), nn.Linear(d_ff, d))
-        self.film = nn.Linear(d_cov, 4 * d)
+        self.film = nn.Linear(d_cov, (4 if attention else 2) * d)
         nn.init.zeros_(self.film.weight); nn.init.zeros_(self.film.bias)
         self.drop = nn.Dropout(dropout)
 
@@ -131,9 +134,13 @@ class FiLMBlock(nn.Module):
 
     def forward(self, x: torch.Tensor, cov: torch.Tensor,
                 pad_mask: torch.Tensor) -> torch.Tensor:
-        g1, b1, g2, b2 = self.film(cov).unsqueeze(1).chunk(4, dim=-1)
-        h = self.norm1(x) * (1 + g1) + b1
-        x = x + self.drop(self._attend(h, ~pad_mask))
+        f = self.film(cov).unsqueeze(1)
+        if self.attention:
+            g1, b1, g2, b2 = f.chunk(4, dim=-1)
+            h = self.norm1(x) * (1 + g1) + b1
+            x = x + self.drop(self._attend(h, ~pad_mask))
+        else:
+            g2, b2 = f.chunk(2, dim=-1)
         h = self.norm2(x) * (1 + g2) + b2
         return x + self.drop(self.ff(h))
 
@@ -150,7 +157,8 @@ class PeakSetEncoder(nn.Module):
                                    nn.Linear(cfg.d_model, cfg.d_model))
         self.cls = nn.Parameter(torch.randn(1, 1, cfg.d_model) * 0.02)
         self.blocks = nn.ModuleList([
-            FiLMBlock(cfg.d_model, cfg.n_heads, cfg.d_ff, cfg.d_cov, cfg.dropout)
+            FiLMBlock(cfg.d_model, cfg.n_heads, cfg.d_ff, cfg.d_cov, cfg.dropout,
+                      attention=cfg.attention)
             for _ in range(cfg.n_blocks)])
         self.norm = nn.LayerNorm(cfg.d_model)
         self.out_dim = cfg.d_model
@@ -182,13 +190,22 @@ class PeakSetEncoder(nn.Module):
             (loss <= 0).to(torch.float32).unsqueeze(-1),
         ], dim=-1)
         x = self.token(feats) * peak_mask.unsqueeze(-1).float()
-        x = torch.cat([self.cls.expand(x.shape[0], -1, -1), x], dim=1)
-        pad = torch.cat([torch.zeros_like(peak_mask[:, :1]), ~peak_mask], dim=1)
-        # a view with no usable peaks would give an all-masked row; keep the cls token live
-        pad[:, 0] = False
+        if self.cfg.attention:
+            x = torch.cat([self.cls.expand(x.shape[0], -1, -1), x], dim=1)
+            pad = torch.cat([torch.zeros_like(peak_mask[:, :1]), ~peak_mask], dim=1)
+            # a view with no usable peaks would give an all-masked row; keep cls live
+            pad[:, 0] = False
+            for blk in self.blocks:
+                x = blk(x, cov, pad)
+            return self.norm(x[:, 0])
+        # No attention: tokens never exchange information, so a CLS token would
+        # only ever see itself. Pool the peak tokens by a masked mean instead.
+        pad = ~peak_mask
         for blk in self.blocks:
             x = blk(x, cov, pad)
-        return self.norm(x[:, 0])
+        m = peak_mask.unsqueeze(-1).to(x.dtype)
+        pooled = (x * m).sum(dim=1) / m.sum(dim=1).clamp(min=1.0)
+        return self.norm(pooled)
 
 
 class BinnedEncoder(nn.Module):

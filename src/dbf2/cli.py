@@ -136,7 +136,7 @@ def main() -> None:
     p = sub.add_parser("oracle", parents=[common]); p.set_defaults(fn=cmd_oracle)
 
     p = sub.add_parser("train", parents=[common]); p.set_defaults(fn=cmd_train)
-    p.add_argument("--rung", default="M2", choices=["M0", "M1", "M1R", "M2", "M3", "M4", "M5"])
+    p.add_argument("--rung", default="M2", choices=["M0", "M1", "M1R", "M1D", "M2", "M3", "M4", "M5"])
     p.add_argument("--epochs", type=int, default=None)
     p.add_argument("--batch", type=int, default=None)
     p.add_argument("--views", type=int, default=None)
@@ -167,7 +167,7 @@ def main() -> None:
     p.add_argument("--max-candidates", type=int, default=None)
 
     p = sub.add_parser("ablate", parents=[common]); p.set_defaults(fn=cmd_ablate)
-    p.add_argument("--rungs", nargs="+", default=["M0", "M1", "M1R", "M2"])
+    p.add_argument("--rungs", nargs="+", default=["M0", "M1D", "M1R", "M1", "M2"])
     p.add_argument("--seed", type=int, default=None,
                    help="training seed; runs are tagged <rung>_s<seed>")
     p.add_argument("--quantise", type=float, default=None)
