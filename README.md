@@ -198,11 +198,12 @@ established.
    aggregated file rather than fetching from GNPS, MassBank and MoNA. A direct
    fetch, or a DOI deposit of the assembled subset, is needed before the work is
    reproducible without a competition account.
-2. **No arm was tuned.** An untuned MLP and an untuned Transformer are not
-   equidistant from their optima, and the schedule was chosen for the latter. Now
-   that a fair baseline has halved the reported gain, a learning-rate sweep for M0
-   alone — reporting its best configuration against M1R's untuned one — is the
-   single control most likely to move the remaining +0.0291 again.
+2. **No arm was tuned, and the schedule was not neutral.** It was chosen for the
+   peak-token Transformer and inherited unchanged by the dense baseline, so M0 and
+   the token arms are not equidistant from their optima. A learning-rate and width
+   search for M0 alone — reporting its best configuration against M1R's untuned one
+   — is the single control most likely to move the remaining +0.0291 again. (This
+   duplicates item 8; both are kept because referees raise it under both headings.)
 3. **The reported intervals do not cover seed variance.** Average precision is
    averaged across seeds and then bootstrapped over targets, so the interval
    describes target sampling only; seed spread is reported separately. A
