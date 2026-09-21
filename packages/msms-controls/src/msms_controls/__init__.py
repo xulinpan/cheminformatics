@@ -1,11 +1,12 @@
-"""The two controls from the representation-decomposition study, as a public API.
+"""Two controls for attributing gains in MS/MS representation studies.
 
 A comparison between a binned baseline and a peak-level model changes several
 things at once, and the increment belongs to the whole package unless the design
-contains an intervention that moves one component. This module provides the two
-interventions that study found necessary, in a form that does not depend on the
-rest of this package: no models, no dataset layout, no trained weights, numpy
-only.
+contains an intervention that moves one component. This package provides the two
+interventions a controlled decomposition of one such comparison found necessary.
+It depends on nothing but numpy: no models, no dataset layout, no trained
+weights, no deep-learning framework. Apply it to whatever model you already
+have.
 
 **The rounding control.** A binned intensity vector and a peak set are different
 kinds of object and no architecture reads both, so abandoning bins forces a change

@@ -116,13 +116,14 @@ M0 was worth +0.0288 on the corpus with 66 instrument types and 112 adducts, and
 
 ## Using the controls on your own model
 
-The two controls are the transferable part of this work, so they are packaged
-separately from everything else. `dbf2.control` is pure numpy — no torch, no
-rdkit, no data layout, no trained weights — and works against whatever model you
-already have.
+The two controls are the transferable part of this work, so they ship as their
+own distribution: **`msms-controls`**, in `packages/msms-controls/`. Pure numpy —
+no torch, no rdkit, no data layout, no trained weights — and it works against
+whatever model you already have. Installing it does not drag in any of the
+research code below, and CI asserts that.
 
 ```bash
-pip install git+https://github.com/xulinpan/cheminformatics
+pip install msms-controls
 ```
 
 **The rounding control.** Degrade the mass axis in place and pass the result
@@ -130,7 +131,7 @@ through your existing peak encoder, so the representation moves and the
 architecture does not:
 
 ```python
-from dbf2.control import quantise_spectrum
+from msms_controls import quantise_spectrum
 
 mz, intensity, precursor = quantise_spectrum(mz, intensity, precursor, width=0.5)
 ```
@@ -145,7 +146,7 @@ headline was silent: the binned baseline's encoder accepted the acquisition
 covariates and discarded them. Nothing crashed and the numbers looked plausible.
 
 ```python
-from dbf2.control import check_conditioning_parity
+from msms_controls import check_conditioning_parity
 
 check_conditioning_parity(
     {"M0": predict_m0, "M1R": predict_m1r, "M1": predict_m1},
@@ -165,14 +166,19 @@ fitted: the share of peaks that land in an already-occupied cell.
 ## Repository layout
 
 ```
-manuscript/           the manuscript, its figures and tables, and superseded drafts
-src/dbf2/control.py   the two controls, pure numpy, the reusable part
-src/dbf2/             the rest of the model package: preprocessing, encoders, training
-scripts/              seed/sweep analysis and the figure and table builders
-results/              machine-readable numbers behind every figure and table
-pyproject.toml        package metadata; `full` extra adds torch, rdkit and pandas
-requirements-lock.txt the exact environment the reported runs used
+packages/msms-controls/   the two controls as a standalone, numpy-only distribution
+manuscript/               the manuscript, figures and tables, and superseded drafts
+src/dbf2/                 research code: preprocessing, encoders, training, evaluation
+scripts/                  seed/sweep analysis and the figure and table builders
+results/                  machine-readable numbers behind every figure and table
+pyproject.toml            dbf2 metadata; the `full` extra adds torch, rdkit and pandas
+requirements-lock.txt     the exact environment the reported runs used
+.github/workflows/ci.yml  both suites on Python 3.10–3.13
 ```
+
+Two distributions, no dependency between them. `dbf2` keeps its own quantisation
+inside the training pipeline so the published package stays light; a test asserts
+the two implementations agree, so they cannot drift apart unnoticed.
 
 `results/figure_data.json` contains the values plotted in each figure, so the
 figures can be checked against the numbers without rerunning anything.
@@ -181,7 +187,8 @@ figures can be checked against the numbers without rerunning anything.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -e ".[full,test]"        # controls only: pip install -e .
+pip install -e ".[full,test]" -e packages/msms-controls
+# just the controls:  pip install msms-controls
 # requirements-lock.txt holds the exact versions the reported runs used
 ```
 
@@ -215,13 +222,15 @@ for w in 0.25 0.1 0.05 0.01; do
 done
 ```
 
-`python -m pytest src/dbf2/tests` runs the unit tests — 90 tests, no data required.
-Twenty-three cover the public control API, including that quantising without
-snapping the precursor leaks the precursor's mass defect back through the neutral
-loss, and that the parity check names every arm which ignores its covariates.
-Fourteen more cover the rounding control inside the model, including that M1R and
-M1 have identical parameter counts and that their configurations differ in exactly
-one field.
+`python -m pytest src/dbf2/tests` runs the research suite — 71 tests, no data
+required — and `pytest packages/msms-controls` the other 23. Fourteen of the
+former cover the rounding control inside the model, including that M1R and M1 have
+identical parameter counts and that their configurations differ in exactly one
+field; five check that every arm can actually see its acquisition covariates, the
+regression that halved this paper's headline. The control suite covers the
+precursor leak, each merge mode against a square-root-intensity binned
+accumulator, and that the parity check names every failing arm rather than the
+first.
 
 ### Data
 

@@ -3,9 +3,9 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dbf2"
-dynamic = ["version"]
-description = "Research code for a controlled decomposition of the advantage peak-level models hold over binned baselines in MS/MS substructure prediction"
+name = "msms-controls"
+version = "0.1.0"
+description = "Two controls for attributing gains in MS/MS spectral-representation studies: a rounding control and a conditioning-parity check"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
@@ -13,45 +13,36 @@ authors = [
     { name = "Xulin Pan", email = "xulinpanias@gmail.com" },
     { name = "Chuanming Wang" },
 ]
-keywords = ["mass-spectrometry", "tandem-ms", "cheminformatics",
-            "structure-annotation", "ablation", "spectral-representation"]
+keywords = ["mass-spectrometry", "tandem-ms", "msms", "cheminformatics",
+            "ablation", "experimental-design", "spectral-representation",
+            "mass-defect", "binning"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Chemistry",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Typing :: Typed",
 ]
-
 dependencies = ["numpy>=1.24"]
 
 [project.optional-dependencies]
-# Everything needed to train the arms and reproduce the paper.
-full = [
-    "torch>=2.1",
-    "pandas>=2.0",
-    "pyarrow>=14.0",
-    "rdkit>=2023.9.1",
-    "matplotlib>=3.7",
-]
-test = ["pytest>=7.4", "msms-controls"]
+test = ["pytest>=7.4"]
 
 [project.urls]
 Repository = "https://github.com/xulinpan/cheminformatics"
-
-[project.scripts]
-dbf2 = "dbf2.cli:main"
-
-[tool.setuptools.dynamic]
-version = { attr = "dbf2.__version__" }
+Issues = "https://github.com/xulinpan/cheminformatics/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["dbf2*"]
 
 [tool.setuptools.package-data]
-dbf2 = ["py.typed"]
+msms_controls = ["py.typed"]
 
 [tool.pytest.ini_options]
-testpaths = ["src/dbf2/tests"]
+testpaths = ["tests"]

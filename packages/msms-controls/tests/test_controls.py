@@ -1,4 +1,4 @@
-"""Tests for the public control API.
+"""Tests for the control API.
 
 These cover the two mistakes the controls exist to prevent: a rounding control
 that leaks precision through the precursor, and an arm that silently ignores the
@@ -7,7 +7,7 @@ side information every other arm receives.
 import numpy as np
 import pytest
 
-from dbf2.control import (ConditioningParityError, absorbed_fraction,
+from msms_controls import (ConditioningParityError, absorbed_fraction,
                           check_conditioning_parity, conditioning_response,
                           quantise_peaks, quantise_spectrum)
 

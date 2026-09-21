@@ -1,0 +1,80 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  controls:
+    # The published package is pure numpy. Test it on every supported version and
+    # without the research stack installed, so a torch-only import creeping in
+    # fails here rather than in a user's environment.
+    name: msms-controls (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install
+        working-directory: packages/msms-controls
+        run: pip install -e ".[test]"
+      - name: Assert the install stayed light
+        run: |
+          python - <<'PY'
+          import importlib.util, sys
+          for heavy in ("torch", "rdkit", "pandas", "matplotlib"):
+              if importlib.util.find_spec(heavy) is not None:
+                  sys.exit(f"{heavy} is installed; msms-controls must stay numpy-only")
+          import msms_controls
+          print("numpy-only install verified:", sorted(msms_controls.__all__))
+          PY
+      - name: Test
+        working-directory: packages/msms-controls
+        run: pytest -q
+
+  research:
+    # The full research package, including the guard that keeps its internal
+    # quantisation in step with the published one.
+    name: dbf2 (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install
+        run: |
+          pip install --index-url https://download.pytorch.org/whl/cpu torch
+          pip install -e ".[full,test]" -e packages/msms-controls
+      - name: Test
+        run: pytest -q src/dbf2/tests
+
+  build:
+    name: build distributions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build twine
+      - name: Build and check msms-controls
+        working-directory: packages/msms-controls
+        run: |
+          python -m build
+          twine check dist/*
+      - name: Build and check dbf2
+        run: |
+          python -m build
+          twine check dist/*
