@@ -298,6 +298,13 @@ established.
    whether this is a finding about the field or about one codebase, and it is
    answerable from released code.
 
+## Publishing
+
+`msms-controls` is released from this repository by GitHub Actions, using PyPI
+Trusted Publishing — PyPI mints a short-lived token at upload time, so no API
+token is stored in a secret or pasted anywhere. The one-time setup and the
+release steps are in [`docs/releasing.md`](docs/releasing.md).
+
 ## Citing
 
 See `CITATION.cff`.

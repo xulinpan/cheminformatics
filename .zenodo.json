@@ -1,0 +1,29 @@
+{
+  "title": "msms-controls: two controls for attributing gains in MS/MS spectral-representation studies",
+  "description": "<p>A rounding control and a conditioning-parity check for experiments that compare peak-level MS/MS models against binned baselines.</p><p>The rounding control quantises the mass axis inside the peak-token pipeline, so the spectral representation can be varied while the encoder is held fixed; a two-arm comparison otherwise moves both at once. The conditioning-parity check asserts that every arm of an ablation actually responds to the acquisition metadata it was given, a failure that is silent and that halved the headline result of the study this package was extracted from.</p><p>Pure numpy. Supporting software for Pan X, Wang C, <em>A metadata-matched binned baseline halves the apparent peak-level advantage in MS/MS substructure prediction</em>.</p>",
+  "upload_type": "software",
+  "license": "MIT",
+  "access_right": "open",
+  "creators": [
+    { "name": "Pan, Xulin", "affiliation": "The Pennsylvania State University, University Park, PA, USA" },
+    { "name": "Wang, Chuanming", "affiliation": "School of Biological and Food Engineering, Honghe University, Mengzi, China" }
+  ],
+  "keywords": [
+    "tandem mass spectrometry",
+    "MS/MS",
+    "cheminformatics",
+    "structure annotation",
+    "spectral representation",
+    "mass defect",
+    "ablation study",
+    "experimental design",
+    "baseline construction"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/xulinpan/cheminformatics",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}

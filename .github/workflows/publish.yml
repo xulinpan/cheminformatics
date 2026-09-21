@@ -1,0 +1,104 @@
+name: publish
+
+# Publishes msms-controls to PyPI when a release tagged msms-controls-vX.Y.Z is
+# published, and offers a TestPyPI dry run on demand.
+#
+# Authentication is PyPI Trusted Publishing (OpenID Connect): PyPI is configured
+# to trust this repository and this workflow, and mints a short-lived token at
+# upload time. No API token is stored in the repository, in a secret, or anywhere
+# a person has to paste it. Setting this up is a one-time form on PyPI; see
+# "Publishing" in the README.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Where to upload"
+        required: true
+        default: testpypi
+        type: choice
+        options: [testpypi, pypi]
+
+jobs:
+  build:
+    name: build msms-controls
+    runs-on: ubuntu-latest
+    # On a release, only act on tags that name this distribution. The repository
+    # holds two packages whose versions diverge, so an unqualified tag is
+    # ambiguous and is ignored rather than guessed at.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.event.release.tag_name, 'msms-controls-v')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install build twine
+
+      - name: Check the tag matches the packaged version
+        if: github.event_name == 'release'
+        working-directory: packages/msms-controls
+        run: |
+          python - <<'PY'
+          import os, re, sys, tomllib
+          tag = os.environ["TAG"]
+          want = tag.removeprefix("msms-controls-v")
+          with open("pyproject.toml", "rb") as fh:
+              have = tomllib.load(fh)["project"]["version"]
+          if want != have:
+              sys.exit(f"tag {tag!r} claims version {want!r} but pyproject says {have!r}")
+          print(f"tag and pyproject agree on {have}")
+          PY
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+
+      - name: Build
+        working-directory: packages/msms-controls
+        run: python -m build
+
+      - name: Check
+        working-directory: packages/msms-controls
+        run: twine check --strict dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: msms-controls-dist
+          path: packages/msms-controls/dist/
+
+  testpypi:
+    name: upload to TestPyPI
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi'
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: msms-controls-dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  pypi:
+    name: upload to PyPI
+    needs: build
+    if: >-
+      github.event_name == 'release' ||
+      (github.event_name == 'workflow_dispatch' && inputs.target == 'pypi')
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: msms-controls-dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
