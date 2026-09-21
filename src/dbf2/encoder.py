@@ -209,14 +209,25 @@ class PeakSetEncoder(nn.Module):
 
 
 class BinnedEncoder(nn.Module):
-    """Version-1 representation, retained only to reproduce ablation rung M0."""
+    """Version-1 representation, retained to reproduce ablation rung M0.
+
+    The acquisition covariates are concatenated to the binned vector before the
+    perceptron. Earlier versions of this class accepted ``cov`` and ignored it,
+    which left M0 the only arm unable to see the collision energy, adduct,
+    polarity or instrument, while every peak-set arm conditioned each of its
+    blocks on them through FiLM. Collision energy largely determines which bonds
+    break, so that silently folded "the baseline cannot see the acquisition" into
+    every contrast measured against M0. ``test_binned_encoder_sees_covariates``
+    pins the pathway open.
+    """
 
     def __init__(self, cfg: ModelConfig):
         super().__init__()
         self.cfg = cfg
         self.n_bins = int(cfg.bin_max_mz / cfg.bin_width)
+        d_in = 2 * self.n_bins + cfg.d_cov
         self.net = nn.Sequential(
-            nn.Linear(2 * self.n_bins, cfg.d_model * 2), nn.GELU(),
+            nn.Linear(d_in, cfg.d_model * 2), nn.GELU(),
             nn.Dropout(cfg.dropout), nn.Linear(cfg.d_model * 2, cfg.d_model))
         self.out_dim = cfg.d_model
 
@@ -230,8 +241,8 @@ class BinnedEncoder(nn.Module):
         bl = torch.clamp(((precursor.float().unsqueeze(-1) - mz.float()) / w).long(), 0, nb - 1)
         frag.scatter_add_(1, bi, val)
         loss.scatter_add_(1, bl, val)
-        x = torch.cat([frag, loss], dim=-1)
-        return self.net(F.normalize(x, dim=-1))
+        x = F.normalize(torch.cat([frag, loss], dim=-1), dim=-1)
+        return self.net(torch.cat([x, cov.float()], dim=-1))
 
 
 def build_encoder(cfg: ModelConfig) -> nn.Module:

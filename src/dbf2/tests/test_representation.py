@@ -214,3 +214,91 @@ def test_M1D_pools_peaks_rather_than_a_cls_token():
     h = enc(mz, torch.ones(1, 2), torch.tensor([342.25], dtype=torch.float64),
             torch.ones(1, 2, dtype=torch.bool), torch.zeros(1, cfg.d_cov))
     assert h.shape == (1, cfg.d_model) and torch.isfinite(h).all()
+
+
+# ------------------------------------------- acquisition covariates reach every arm
+# BinnedEncoder once accepted `cov` and ignored it, so M0 alone could not see the
+# collision energy, adduct, polarity or instrument while every peak-set arm was
+# conditioned on them. That silently folded "the baseline is blind to the
+# acquisition" into every contrast measured against M0. These tests keep the
+# pathway open in all arms.
+
+def _batch(ce=10.0, adduct=0, instrument=0, seed=0):
+    torch.manual_seed(seed)
+    B, V, K = 2, 2, 8
+    return dict(
+        mz=torch.rand(B, V, K, dtype=torch.float64) * 300 + 50,
+        intensity=torch.rand(B, V, K),
+        precursor_mz=torch.full((B, V), 400.0, dtype=torch.float64),
+        peak_mask=torch.ones(B, V, K, dtype=torch.bool),
+        view_mask=torch.ones(B, V, dtype=torch.bool),
+        adduct_id=torch.full((B, V), adduct, dtype=torch.long),
+        polarity_id=torch.zeros(B, V, dtype=torch.long),
+        instrument_id=torch.full((B, V), instrument, dtype=torch.long),
+        ce_ev=torch.full((B, V), ce), ce_missing=torch.zeros(B, V))
+
+
+@pytest.mark.parametrize("rung", ["M0", "M1D", "M1R", "M1", "M2"])
+def test_every_arm_responds_to_the_acquisition(rung):
+    """Same spectrum, different collision energy, adduct and instrument: the
+    prediction must change. FiLM is zero-initialised, so the conditioning path is
+    inactive at step 0 by design; perturb it first or the test proves nothing."""
+    import torch.nn as nn
+    from dbf2.model import DeepBayesFrag
+    cfg = Config.ablation(rung, ".")
+    cfg.model.n_presence, cfg.model.n_count = 512, 88
+    torch.manual_seed(0)
+    m = DeepBayesFrag(cfg.model)
+    for n, p in m.named_parameters():
+        if ".film." in n:
+            nn.init.normal_(p, std=0.05)
+    m.eval()
+    a = m(_batch(ce=10.0, adduct=0, instrument=0))["logit"]
+    b = m(_batch(ce=90.0, adduct=1, instrument=2))["logit"]
+    assert not torch.allclose(a, b, atol=1e-6), f"{rung} ignores the acquisition"
+
+
+@pytest.mark.parametrize("rung", ["M0", "M1D", "M1R", "M1", "M2"])
+def test_covariate_encoder_is_reachable(rung):
+    """A gradient must reach cov_encoder, or its weights are dead."""
+    import torch.nn as nn
+    from dbf2.model import DeepBayesFrag
+    cfg = Config.ablation(rung, ".")
+    cfg.model.n_presence, cfg.model.n_count = 512, 88
+    torch.manual_seed(0)
+    m = DeepBayesFrag(cfg.model)
+    for n, p in m.named_parameters():
+        if ".film." in n:
+            nn.init.normal_(p, std=0.05)
+    m(_batch())["logit"].sum().backward()
+    g = sum(p.grad.abs().sum().item() for n, p in m.named_parameters()
+            if n.startswith("cov_encoder") and p.grad is not None)
+    assert g > 0.0, f"{rung} leaves cov_encoder without gradient"
+
+
+def test_binned_encoder_sees_covariates():
+    """The specific regression: BinnedEncoder must consume cov, not just accept it."""
+    from dbf2.encoder import BinnedEncoder
+    cfg = Config.ablation("M0", ".").model
+    enc = BinnedEncoder(cfg).eval()
+    mz = torch.rand(2, 8, dtype=torch.float64) * 300 + 50
+    inten = torch.rand(2, 8)
+    prec = torch.full((2,), 400.0, dtype=torch.float64)
+    mask = torch.ones(2, 8, dtype=torch.bool)
+    torch.manual_seed(1)
+    c1 = torch.randn(2, cfg.d_cov)
+    c2 = torch.randn(2, cfg.d_cov)
+    assert not torch.allclose(enc(mz, inten, prec, mask, c1),
+                              enc(mz, inten, prec, mask, c2), atol=1e-6)
+
+
+def test_M0_remains_the_largest_arm():
+    """M0 gains a covariate input; it must still not be handicapped on capacity."""
+    from dbf2.model import DeepBayesFrag
+    n = {}
+    for rung in ("M0", "M1D", "M1R", "M1", "M2"):
+        cfg = Config.ablation(rung, ".")
+        cfg.model.n_presence, cfg.model.n_count = 512, 88
+        torch.manual_seed(0)
+        n[rung] = sum(p.numel() for p in DeepBayesFrag(cfg.model).parameters())
+    assert n["M0"] == max(n.values()), n
