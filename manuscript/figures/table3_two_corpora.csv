@@ -1,6 +1,6 @@
 effect,single library,SD (single),open corpus,SD (open)
-encoder,+0.0377,0.0019,+0.0438,0.0030
+encoder,+0.0234,0.0002,+0.0149,0.0013
 mass axis,+0.0268,0.0049,+0.0142,0.0004
 aggregation,+0.0322,0.0035,+0.0179,0.0009
-encoder share of M1 $-$ M0,58.5%,--,75.5%,--
+encoder share of M1 $-$ M0,46.7%,--,51.3%,--
 peaks absorbed at 0.5 Da,34.4%,--,23.6%,--

@@ -92,7 +92,7 @@ what we called ``the encoder'' might have been either. It is the interface.
 \centering
 \includegraphics[width=\linewidth]{figures/fig1_decomposition_open.pdf}
 \caption{Decomposing the gain on the open corpus. \textbf{Left}: held-out macro
-AUPRC for the four arms; small dots are individual seeds, large dots their mean.
+AUPRC for the five arms; small dots are individual seeds, large dots their mean.
 \textbf{Right}: what each single change is worth, paired over targets with $95\%$
 bootstrap intervals; small dots are the per-seed effect sizes.}
 \label{fig:decomposition}
@@ -101,11 +101,14 @@ bootstrap intervals; small dots are the per-seed effect sizes.}
 \hd{What the ordering supports, and what it no longer does}
 Aggregation is now the largest of the three effects, exceeding the encoder in all
 three seeds ($+0.0009$, $+0.0030$, $+0.0049$) and the mass axis in all three
-($+0.0028$, $+0.0045$, $+0.0037$). That ranking we regard as established.
+($+0.0028$, $+0.0045$, $+0.0037$). It exceeds the encoder in all three seeds on the
+single-library corpus as well. That ranking we regard as established.
 
 The encoder and the mass axis cannot be separated. Their difference is $+0.0019$,
 $+0.0015$ and $-0.0012$ across seeds: positive twice, negative once, and an order of
-magnitude smaller than either effect. Against the unconditioned baseline the encoder
+magnitude smaller than either effect. It reverses on the single-library corpus too,
+in the opposite direction ($-0.0016$, $+0.0006$, $-0.0090$), so the failure to order
+them is not a property of one corpus. Against the unconditioned baseline the encoder
 led by $+0.0296$ and that ordering held in every seed. Conditioning the baseline
 erased the lead.
 
@@ -123,19 +126,28 @@ of whose spectra come from one instrument (timsTOF), against the open corpus's $
 instrument types drawn from three public libraries
 (Fig.~\ref{fig:corpora}, Table~\ref{tab:table3_two_corpora}).
 
-The mass-axis effect falls from $+0.0268$ on the single-library corpus to $+0.0142$
-on the open one, roughly halving as the instrument mix widens from one to $66$.
-Aggregation falls comparably, from $+0.0322$ to $+0.0179$. Both comparisons are
-between arms that differ from each other in the same way on both corpora, so both
-are sound.
+Every effect is smaller on the open corpus, and by a similar factor: the encoder
+falls from $+0.0234$ to $+0.0149$, the mass axis from $+0.0268$ to $+0.0142$, and
+aggregation from $+0.0322$ to $+0.0179$. Both ladders were fitted against the
+conditioned baseline, so all three contrasts are comparable.
 
-The encoder effect is not yet comparable across the two. The single-library arms
-were fitted before the baseline was given the acquisition covariates, so its
-$+0.0377$ is measured against an unconditioned M0 and the open corpus's $+0.0149$
-against a conditioned one. Rerunning M0 on the single-library corpus is the obvious
-remedy and we report the two encoder figures as not comparable until it is done. The
-mass-axis and aggregation rows in Table~\ref{tab:table3_two_corpora} are unaffected,
-because neither contrast involves M0.
+What replicates is the finding, not merely its direction. On the single-library
+corpus the encoder is worth $+0.0234$ and the mass axis $+0.0268$; their difference
+is $-0.0016$, $+0.0006$ and $-0.0090$ across seeds, reversing sign exactly as it
+does on the open corpus. The encoder's share of the gain a two-arm comparison would
+report is $46.7\%$ here against $51.3\%$ there. Two corpora with almost nothing in
+common --- one library against three, two instrument types against $66$, $16$
+adducts against $112$ --- return the same answer: the encoder and the mass axis are
+worth about the same, and neither can be ordered against the other. Aggregation
+exceeds the encoder in all three seeds on both.
+
+The correction itself replicates too, and in a way that supports the reading we give
+it. Conditioning M0 on the acquisition covariates was worth $+0.0288$ on the open
+corpus and $+0.0142$ on the single-library one. If those covariates matter because
+they tell the model how the spectrum was produced, their value should scale with how
+much the production varied, and the open corpus carries $66$ instrument types and
+$112$ adducts against two and $16$. We offer this as a consistency check rather than
+a result.
 
 \begin{figure}[htbp]
 \centering

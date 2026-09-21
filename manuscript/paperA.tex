@@ -199,9 +199,10 @@ chemical variety three public libraries carry than one in-house library. Because
 almost all targets fall below $1\%$ prevalence we report AUPRC as the primary metric
 and AUROC only as a secondary summary.
 
-\hd{The four arms}
-The design is a ladder in which each arm differs from the one below it in exactly
-one respect.
+\hd{The five arms}
+The design is a ladder --- M0, M1D, M1R, M1, M2 --- in which each arm differs from
+the one below it in exactly one respect. We describe M1R before M1D because M1R is
+the control the design turns on, and M1D subdivides the effect M1R isolates.
 
 \emph{M0, the conventional baseline.} Each spectrum is projected onto $2{,}048$
 fragment bins and $2{,}048$ precursor-minus-fragment bins of width $0.5$~Da over
@@ -341,11 +342,12 @@ gain lies in letting the model see peaks individually, not in any particular
 mechanism for relating them. That is a testable claim about each of them, and both
 controls we describe are cheap enough to apply.
 
-The two corpora add a caveat of their own, on the one quantity they can still be
-compared on. The mass-axis effect roughly halves as the instrument mix widens from
-one to $66$, from $+0.0268$ to $+0.0142$, and aggregation falls comparably. The
-encoder effects are not yet comparable, because the single-library arms predate the
-conditioned baseline. Our hypothesis for the mass-axis change is that a
+The second corpus replicates all of this and adds a caveat of its own. The encoder
+and the mass axis are indistinguishable there too, and their difference reverses
+across seeds in the opposite direction, so the failure to order them belongs to the
+comparison rather than to one dataset. But every effect is smaller on the open
+corpus, the mass axis roughly halving from $+0.0268$ to $+0.0142$ as the instrument
+mix widens from one to $66$. Our hypothesis for the mass-axis change is that a
 heterogeneous corpus contains many spectra whose reported $m/z$ carries little real
 precision, so preserving precision helps less on average. If that is right, the value of full-precision input depends on the
 instrument mix a method will encounter, and a method tuned on a homogeneous
@@ -379,23 +381,27 @@ what bin width suffices is evidently not settled by either.
 
 \hd{Limitations}
 The open corpus is roughly a sixth of the available spectra and the single-library
-corpus a tenth; absolute values will move with scale even if the ordering does not.
-Three seeds per arm establish the ordering on the open corpus, where it holds in
-every seed, but on the single-library corpus the mass axis and aggregation could not
-be separated, and we declined to rank them there. The sweep carries one run per width
+corpus a tenth; absolute values will move with scale even if the relative sizes do
+not. Three seeds per arm are enough to establish that aggregation exceeds the
+encoder, which holds in every seed on both corpora, but not to order the encoder
+against the mass axis, whose difference changes sign across seeds on both. The mass
+axis and aggregation separate on the open corpus and not on the single-library one,
+and we declined to rank them there. The sweep carries one run per width
 and was run on one corpus, so only its endpoints should be read as findings and its
 $0.05$~Da threshold may not transfer. The instrument-diversity hypothesis above is
 untested: stratifying the mass-axis effect by instrument resolution would settle it
 and is the most informative experiment this work leaves undone. Finally, the null result on
-attention is a null result, and we report it as one: the interval on $+{-}0.0023$
+attention is a null result, and we report it as one: the interval on $-0.0023$
 straddles zero at this sample size and on this task, which is not the same as
 showing that attention cannot help. A larger corpus, a different target family, or
 a task where relating peaks to one another matters more than identifying them
 individually could all move it.
 
 The practical consequence concerns controls. A method evaluated against a binned
-baseline is compared against an arm handicapped in two ways at once, and on this
-evidence the larger handicap is architectural. A paper reporting a gain over such a
+baseline is compared against an arm that differs from it in at least two ways, and
+on this evidence those two are worth about the same --- while a third difference,
+belonging to neither the representation nor the architecture, was worth more than
+either. A paper reporting a gain over such a
 baseline has not shown that its representation is responsible, whatever its
 discussion says. The remedy is inexpensive: report the comparator's encoder as
 explicitly as its representation, and where the claim is about representation,
@@ -430,7 +436,7 @@ baselines.
 
 \section*{Supplementary Information}
 \textbf{Additional file 1} (PDF) reports per-arm and per-seed metrics for all
-twenty-four training runs, the per-seed effect sizes and the within-seed ordering
+twenty-seven training runs, the per-seed effect sizes and the within-seed ordering
 checks behind every ranking claimed here, the full bootstrap distributions, the
 peak-absorption analysis broken down by adduct, collision energy and instrument
 family, the bin-width sweep in full, and the exact commands that regenerate all of

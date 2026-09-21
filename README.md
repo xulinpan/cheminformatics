@@ -85,18 +85,25 @@ ladder there gives the same qualitative answer with a different balance:
 
 | effect | single library (99% timsTOF) | open (66 instruments) |
 |---|---:|---:|
+| encoder | +0.0234 | +0.0149 |
 | mass axis | +0.0268 | +0.0142 |
 | aggregation | +0.0322 | +0.0179 |
+| encoder share of M1 − M0 | 46.7% | 51.3% |
+| M0's gain from conditioning | +0.0142 | +0.0288 |
 | peaks absorbed at 0.5 Da | 34.4% | 23.6% |
 
-Only the contrasts that do not involve M0 are comparable across the two corpora: the
-single-library M0 runs predate the covariate correction and have not been refit, so
-the encoder and interface effects are reported for the open corpus alone. On the two
-contrasts that are comparable, both hold their sign and ordering, and the mass axis
-is worth roughly half as much once the instrument mix widens from one to 66. Our
-hypothesis is that a heterogeneous corpus contains many spectra whose reported *m/z*
-carries little real precision; that is untested, and named in the paper as the most
-informative experiment left undone.
+Both ladders are fitted against the conditioned baseline, so every row is
+comparable. The finding replicates: the encoder and the mass axis are
+indistinguishable on both corpora, their difference reverses across seeds on both
+(in opposite directions), and aggregation beats the encoder in every seed on both.
+Every effect is smaller on the open corpus, the mass axis roughly halving as the
+instrument mix widens from one to 66. Our hypothesis is that a heterogeneous corpus
+contains many spectra whose reported *m/z* carries little real precision; that is
+untested, and named in the paper as the most informative experiment left undone.
+
+The covariate correction replicates too, and scales the way it should: conditioning
+M0 was worth +0.0288 on the corpus with 66 instrument types and 112 adducts, and
++0.0142 on the one with two and 16.
 
 ## Repository layout
 
@@ -209,10 +216,11 @@ established.
    (+0.0172) and attention for none (−0.0023, interval includes zero).
 8. **No external baseline, and the endpoint is a proxy.** Every arm here is ours, and
    whether the gain propagates to top-*k* structure retrieval is not shown.
-9. **The single-library ladder has not been refit under the corrected baseline.**
-   Its M0 runs predate the covariate fix, so that corpus contributes nothing to the
-   encoder and interface claims. Three M0 runs (roughly ten minutes) would restore
-   the two-corpus comparison in full.
+9. **The generality of the covariate confound is not established.** We show that
+   *our* binned baseline was denied metadata the peak-set arms received. Whether
+   published binned comparators share the defect is the question that decides
+   whether this is a finding about the field or about one codebase, and it is
+   answerable from released code.
 
 ## Citing
 

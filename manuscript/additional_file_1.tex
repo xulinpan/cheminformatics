@@ -33,7 +33,7 @@ Table~\ref{tab:s1} gives every trained arm on both corpora. Twenty-seven trainin
 runs: five arms $\times$ three seeds on the open corpus, four $\times$ three on the
 single-library corpus. Parameter counts are
 identical between M1R and M1 by construction, and the binned baseline M0 carries
-$63\%$ more parameters than either.
+$65\%$ more parameters than either.
 
 \begin{table}[htbp]
 \centering
@@ -62,9 +62,9 @@ open & M2  & 2026 & 829,584   & 14 & 0.1899 & 0.9072 & 0.00512 \\
 open & M2  & 7    & 829,584   & 14 & 0.1893 & 0.9052 & 0.00511 \\
 open & M2  & 13   & 829,584   & 12 & 0.1871 & 0.9090 & 0.00512 \\
 \midrule
-single library & M0  & 2026 & 1,164,560 & 13 & 0.0476 & 0.7832 & 0.00704 \\
-single library & M0  & 7    & 1,164,560 & 13 & 0.0472 & 0.7819 & 0.00704 \\
-single library & M0  & 13   & 1,164,560 & 14 & 0.0485 & 0.7837 & 0.00704 \\
+single library & M0  & 2026 & 1,172,752 & 14 & 0.0631 & 0.8096 & 0.00689 \\
+single library & M0  & 7    & 1,172,752 & 14 & 0.0621 & 0.8105 & 0.00688 \\
+single library & M0  & 13   & 1,172,752 & 13 & 0.0608 & 0.8109 & 0.00688 \\
 single library & M1R & 2026 & 712,336   & 13 & 0.0867 & 0.8457 & 0.00673 \\
 single library & M1R & 7    & 712,336   & 14 & 0.0856 & 0.8474 & 0.00672 \\
 single library & M1R & 13   & 712,336   & 14 & 0.0840 & 0.8470 & 0.00675 \\
@@ -78,18 +78,19 @@ single library & M2  & 13   & 829,584   & 14 & 0.1444 & 0.8837 & 0.00641 \\
 \end{tabular}
 \end{table}
 
-The five open-corpus arms are all conditioned on the acquisition covariates
-(collision energy, adduct, polarity, instrument). In earlier versions of this work
-M0 alone was not: its encoder accepted the covariate vector and discarded it, so the
-binned baseline was the only arm predicting without knowing how the spectrum had
-been acquired. The M0 rows above are refits under the corrected baseline and
+Every arm in both ladders is conditioned on the acquisition covariates (collision
+energy, adduct, polarity, instrument). In earlier versions of this work M0 alone was
+not: its encoder accepted the covariate vector and discarded it, so the binned
+baseline was the only arm predicting without knowing how the spectrum had been
+acquired. All six M0 rows above are refits under the corrected baseline and
 supersede the figures reported previously; the main text states what the correction
-cost the headline claim. The three single-library M0 rows are the original,
-un-reconditioned runs and carry the smaller parameter count ($1{,}164{,}560$ against
-the corrected baseline's $1{,}172{,}752$) that marks them as such. They are retained because the
-single-library ladder is used in the main text only for the mass-axis and
-aggregation contrasts, neither of which involves M0; the encoder and interface
-contrasts are reported for the open corpus alone.
+cost the headline claim.
+
+Conditioning was worth $+0.0288$ to M0 on the open corpus and $+0.0142$ on the
+single-library corpus. That the gain roughly doubles with the corpus's acquisition
+diversity --- $66$ instrument types and $112$ adducts against two and sixteen ---
+is what one would expect if the covariates are doing the work we ascribe to them,
+and we note it as a consistency check rather than a result.
 
 \section*{S2\quad Per-seed effect sizes and ordering checks}
 
@@ -113,7 +114,7 @@ open & encoder (M1R $-$ M0)     & $+0.0159$ & $+0.0154$ & $+0.0134$ & $+0.0149$ 
 open & mass axis (M1 $-$ M1R)   & $+0.0140$ & $+0.0139$ & $+0.0147$ & $+0.0142$ & 0.0004 \\
 open & aggregation (M2 $-$ M1)  & $+0.0168$ & $+0.0184$ & $+0.0184$ & $+0.0179$ & 0.0009 \\
 \midrule
-single library & encoder     & $+0.0392$ & $+0.0383$ & $+0.0355$ & $+0.0377$ & 0.0019 \\
+single library & encoder     & $+0.0236$ & $+0.0235$ & $+0.0232$ & $+0.0234$ & 0.0002 \\
 single library & mass axis   & $+0.0252$ & $+0.0229$ & $+0.0322$ & $+0.0268$ & 0.0049 \\
 single library & aggregation & $+0.0341$ & $+0.0343$ & $+0.0282$ & $+0.0322$ & 0.0035 \\
 \bottomrule
@@ -135,15 +136,19 @@ open & encoder $-$ mass axis   & $+0.0019$ & $+0.0015$ & $-0.0012$ & $+0.0007$ &
 open & encoder $-$ aggregation & $-0.0009$ & $-0.0030$ & $-0.0049$ & $-0.0029$ & 3/3 consistent \\
 open & mass axis $-$ aggregation & $-0.0028$ & $-0.0045$ & $-0.0037$ & $-0.0037$ & 3/3 consistent \\
 \midrule
-single library & encoder $-$ mass axis   & $+0.0139$ & $+0.0154$ & $+0.0033$ & $+0.0109$ & 3/3 consistent \\
-single library & encoder $-$ aggregation & $+0.0051$ & $+0.0040$ & $+0.0074$ & $+0.0055$ & 3/3 consistent \\
+single library & encoder $-$ mass axis   & $-0.0016$ & $+0.0006$ & $-0.0090$ & $-0.0033$ & \textbf{reverses} \\
+single library & encoder $-$ aggregation & $-0.0105$ & $-0.0108$ & $-0.0049$ & $-0.0087$ & 3/3 consistent \\
 single library & mass axis $-$ aggregation & $-0.0089$ & $-0.0114$ & $+0.0041$ & $-0.0054$ & \textbf{reverses} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The final row is why the main text ranks the mass axis against aggregation on the
-open corpus and declines to on the single-library corpus.
+Three things are worth reading off this table. The encoder-against-mass-axis row
+reverses on both corpora independently, which is why the main text declines to order
+those two anywhere. The encoder-against-aggregation row is consistent on both and
+negative on both, which is why aggregation is the one ranking the paper does claim.
+And the final row is why the main text ranks the mass axis against aggregation on
+the open corpus and declines to on the single-library corpus.
 
 \section*{S3\quad Bootstrap distributions}
 
@@ -158,9 +163,10 @@ Table~\ref{tab:s4} summarises them.
 \caption{Bootstrap distributions on each corpus. The open panel shows the encoder
 split into its two components: the interface distribution sits far from the others
 while the attention distribution is centred on zero. On the single-library corpus,
-which has no attention arm, the composite encoder effect is shown instead, and all
-three distributions overlap --- the mass-axis and aggregation ones heavily, which is
-the same fact Table~\ref{tab:s3} records as a sign reversal.}
+which has no attention arm, the composite encoder effect is shown instead. The
+encoder and mass-axis distributions overlap heavily there, and the mass-axis and
+aggregation ones likewise, which is the same fact Table~\ref{tab:s3} records as two
+sign reversals; only the encoder and aggregation distributions separate.}
 \label{fig:s1}
 \end{figure}
 
@@ -180,7 +186,7 @@ open & encoder     & 0.01498 & 0.00362 & 0.00798 & 0.02210 \\
 open & mass axis   & 0.01415 & 0.00230 & 0.00969 & 0.01865 \\
 open & aggregation & 0.01785 & 0.00222 & 0.01360 & 0.02233 \\
 \midrule
-single library & encoder     & 0.03768 & 0.00239 & 0.03311 & 0.04245 \\
+single library & encoder     & 0.02344 & 0.00194 & 0.01972 & 0.02729 \\
 single library & mass axis   & 0.02678 & 0.00243 & 0.02208 & 0.03168 \\
 single library & aggregation & 0.03219 & 0.00243 & 0.02751 & 0.03696 \\
 \bottomrule

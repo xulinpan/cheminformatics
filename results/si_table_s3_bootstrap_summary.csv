@@ -5,5 +5,5 @@ open,encoder,0.01498,0.00362,0.00798,0.0221
 open,interface,0.01727,0.0036,0.0102,0.02419
 open,mass axis,0.01415,0.0023,0.00969,0.01865
 single_library,aggregation,0.03219,0.00243,0.02751,0.03696
-single_library,encoder,0.03768,0.00239,0.03311,0.04245
+single_library,encoder,0.02344,0.00194,0.01972,0.02729
 single_library,mass axis,0.02678,0.00243,0.02208,0.03168
