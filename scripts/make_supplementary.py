@@ -4,7 +4,7 @@ import json, pathlib, numpy as np, pandas as pd
 
 OUT = pathlib.Path("cheminformatics/results")
 SEEDS = {"2026": "", "7": "_s7", "13": "_s13"}
-RUNGS = ["M0", "M1R", "M1", "M2"]
+RUNGS = ["M0", "M1D", "M1R", "M1", "M2"]
 CORPORA = {"open": pathlib.Path("dbf2_runs_open"), "single_library": pathlib.Path("dbf2_runs")}
 
 
@@ -47,6 +47,8 @@ for corpus, run_dir in CORPORA.items():
                 continue
             a, scored = ap_matrix(run_dir, r + suf, scored)
             cols.append(a)
+        if not cols:
+            continue
         aps[r] = np.mean(cols, axis=0)
         for seed, col in zip(SEEDS, cols):
             aps[f"{r}_seed{seed}"] = col
@@ -54,8 +56,11 @@ for corpus, run_dir in CORPORA.items():
     all_ap.append(df)
 
     rng = np.random.RandomState(0)
-    for name, lo, hi in (("encoder", "M0", "M1R"), ("mass axis", "M1R", "M1"),
+    for name, lo, hi in (("interface", "M0", "M1D"), ("attention", "M1D", "M1R"),
+                         ("encoder", "M0", "M1R"), ("mass axis", "M1R", "M1"),
                          ("aggregation", "M1", "M2")):
+        if lo not in aps or hi not in aps:
+            continue
         d = aps[hi] - aps[lo]
         draws = d[rng.randint(0, len(d), (5000, len(d)))].mean(1)
         all_boot.append(pd.DataFrame({"corpus": corpus, "effect": name, "draw": draws}))

@@ -34,10 +34,11 @@ spectrum from GNPS, MassBank and MoNA: 414,992 spectra over 52,428 structures,
 
 | arm | mass axis | encoder | pooling | parameters | macro AUPRC | SD over seeds |
 |-----|-----------|---------|---------|-----------:|------------:|--------------:|
-| M0 | 0.5 Da bins | MLP | mean | 1,164,560 | 0.1130 | 0.0012 |
-| M1R | 0.5 Da bins | Transformer | mean | 712,336 | 0.1567 | 0.0025 |
-| M1 | full precision | Transformer | mean | 712,336 | 0.1709 | 0.0022 |
-| M2 | full precision | Transformer | hierarchical | 829,584 | 0.1888 | 0.0015 |
+| M0 | 0.5 Da bins | dense vector, MLP | mean | 1,164,560 | 0.1130 | 0.0012 |
+| M1D | 0.5 Da bins | peak tokens, no attention | mean | 714,528 | 0.1590 | 0.0024 |
+| M1R | 0.5 Da bins | peak tokens, attention | mean | 712,336 | 0.1567 | 0.0025 |
+| M1 | full precision | peak tokens, attention | mean | 712,336 | 0.1709 | 0.0022 |
+| M2 | full precision | peak tokens, attention | hierarchical | 829,584 | 0.1888 | 0.0015 |
 
 **M1R is the control that makes the experiment mean anything.** A binned vector and
 a peak set are different kinds of object and no architecture reads both, so
@@ -47,15 +48,24 @@ separate.
 
 | contrast | isolates | Δ AUPRC | 95% CI | targets improved |
 |----------|----------|--------:|--------|-----------------:|
-| M1R − M0 | encoder | +0.0438 | [+0.0364, +0.0517] | 79.2% |
+| M1D − M0 | interface | +0.0460 | [+0.0382, +0.0548] | 76.7% |
+| M1R − M1D | attention | **−0.0023** | **[−0.0066, +0.0020]** | 54.3% |
+| M1R − M0 | encoder | +0.0438 | [+0.0365, +0.0515] | 79.2% |
 | M1 − M1R | mass axis | +0.0142 | [+0.0097, +0.0188] | 64.9% |
 | M2 − M1 | aggregation | +0.0179 | [+0.0137, +0.0222] | 63.7% |
 | M1 − M0 | encoder and mass axis | +0.0579 | [+0.0494, +0.0667] | 81.8% |
 
 **76% of what a two-arm comparison credits to the spectral representation is the
 encoder.** The ranking encoder > aggregation > mass axis holds in all three seeds,
-and the mass-axis effect is the most stable of the three across seeds (SD 0.0004) —
-it is a small effect measured precisely, not a noisy one.
+and the mass-axis effect is the most stable across seeds (SD 0.0004) — a small
+effect measured precisely, not a noisy one.
+
+**And all of the encoder's share is the interface, none of it attention.** M1D
+presents the same binned peaks as tokens with no attention anywhere in the network.
+It matches the attentive model (+0.0460 against the encoder's +0.0438), and adding
+attention to those tokens is worth −0.0023 with an interval straddling zero,
+positive in one seed of three. A position-wise perceptron over peak tokens captures
+the entire advantage a four-block Transformer captures.
 
 ### The same decomposition on a second, deliberately contrasting corpus
 
@@ -185,8 +195,8 @@ established.
    effect may be that switch. Rung **M1D** now exists to resolve it — same binned
    mass axis and same peak tokens as M1R, with self-attention removed and the
    feed-forward widened so it is not also the smaller arm (714,528 against
-   712,336). `M1D − M0` prices the dense-to-sparse switch and `M1R − M1D` prices
-   attention. **The runs are still outstanding.**
+   712,336). **Resolved:** the interface accounts for the whole effect
+   (+0.0460) and attention for none (−0.0023, interval includes zero).
 8. **No external baseline, and the endpoint is a proxy.** Every arm here is ours, and
    whether the gain propagates to top-*k* structure retrieval is not shown.
 

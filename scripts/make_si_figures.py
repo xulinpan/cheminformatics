@@ -7,15 +7,23 @@ F = importlib.util.module_from_spec(spec); spec.loader.exec_module(F); F.style()
 R = pathlib.Path("cheminformatics/results"); out = pathlib.Path("figures")
 boot = pd.read_csv(R / "si_table_s3_bootstrap_draws.csv.gz")
 
-EFF = ["encoder", "mass axis", "aggregation"]
+# Colour by effect, not by position, or interface and aggregation collide.
+COLOUR = {"interface": F.SERIES[0], "attention": F.MUTED, "encoder": F.SERIES[0],
+          "mass axis": F.SERIES[1], "aggregation": F.SERIES[2]}
+# The open corpus has the attention arm, so the encoder there is shown as its two
+# components; the single-library corpus has only the composite.
+EFF_BY_CORPUS = {"open": ["interface", "attention", "mass axis", "aggregation"],
+                 "single_library": ["encoder", "mass axis", "aggregation"]}
 COR = [("open", "open corpus, 66 instruments"), ("single_library", "single library, 99% timsTOF")]
 fig, axes = plt.subplots(2, 1, figsize=(5.6, 5.2), sharex=True)
 for ax, (corpus, title) in zip(axes, COR):
     ax.axvline(0, color=F.BASELINE, lw=1.0, zorder=1)
     lab = []
-    for i, e in enumerate(EFF):
+    for e in EFF_BY_CORPUS[corpus]:
         d = boot[(boot.corpus == corpus) & (boot.effect == e)].draw.to_numpy()
-        c = F.SERIES[i % 3]
+        if d.size == 0:
+            continue
+        c = COLOUR[e]
         ax.hist(d, bins=70, density=True, color=c, alpha=0.5, lw=0, zorder=2)
         ax.axvline(d.mean(), color=c, lw=1.4, zorder=3)
         lab.append((d.mean(), e, c))
@@ -29,7 +37,7 @@ for ax, (corpus, title) in zip(axes, COR):
     F.finish(ax, title, "5,000 bootstrap draws of the paired per-target mean",
              ylabel="density", grid_axis="x")
 axes[-1].set_xlabel("Δ AUPRC")
-axes[0].set_xlim(-0.002, 0.062)
+axes[0].set_xlim(-0.012, 0.065)
 fig.tight_layout(h_pad=1.8)
 F.save(fig, out, "figS1_bootstrap_distributions")
 

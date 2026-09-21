@@ -1,7 +1,9 @@
 corpus,effect,mean,sd,q025,q975
-open,aggregation,0.01788,0.00218,0.01372,0.02223
-open,encoder,0.04381,0.00391,0.03637,0.05173
-open,mass axis,0.01416,0.00229,0.00972,0.01876
+open,aggregation,0.01785,0.00222,0.0136,0.02233
+open,attention,-0.0023,0.00221,-0.00665,0.00196
+open,encoder,0.04385,0.00384,0.03645,0.0515
+open,interface,0.04612,0.00423,0.03824,0.05477
+open,mass axis,0.01415,0.0023,0.00969,0.01865
 single_library,aggregation,0.03219,0.00243,0.02751,0.03696
 single_library,encoder,0.03768,0.00239,0.03311,0.04245
 single_library,mass axis,0.02678,0.00243,0.02208,0.03168

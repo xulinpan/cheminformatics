@@ -35,39 +35,38 @@ MS/MS gains}
 
 \subsection*{Abstract}
 \small
-Machine-learning methods for tandem mass spectrometry (MS/MS) have moved away from
-fixed-width binned intensity vectors towards models that read peaks at full
-precision, and the resulting gains are commonly attributed to the spectral
-representation. That attribution has never been tested, because abandoning bins
-forces an architecture change at the same time: a peak set cannot be read by the
-network that reads a binned vector. Here we separate them with a rounding control
-that snaps each peak to its bin centre, merges the collisions, and passes the result
-through the \emph{identical} peak-set Transformer at an identical parameter count,
-so each of the encoder and the mass axis --- the precision of the $m/z$ scale ---
-changes with the other held constant. On an openly licensed corpus of $414{,}992$ spectra from GNPS, MassBank
-and MoNA spanning $66$ instrument types, over $10{,}058$ held-out molecules and
-three seeds, replacing a $0.5$~Da binned baseline with a full-precision peak-set
-model raised macro AUPRC from $0.1130$ to $0.1709$ (chance $0.0085$). The control splits that paired gain of $+0.0579$ into $+0.0438$ ($95\%$ CI
-$+0.0364$ to $+0.0517$) for the encoder and $+0.0142$ ($+0.0097$ to $+0.0188$) for
-the mass axis: $76\%$ is architectural, and the ranking encoder $>$ aggregation $>$
-mass axis holds in every seed. Repeating the ladder on a single-library corpus that is
-$99\%$ one instrument gives the encoder $58\%$.
-Improvements measured against binned baselines should not be read as evidence about
-spectral representation. Code:
-\url{https://github.com/xulinpan/cheminformatics}.
+Machine-learning methods for tandem mass spectrometry (MS/MS) have moved from
+fixed-width binned intensity vectors to models that read peaks at full precision,
+and the resulting gains are commonly attributed to the spectral representation.
+That attribution has never been tested, because abandoning bins forces an
+architecture change at the same time: a peak set cannot be read by the network that
+reads a binned vector. We separate them with a rounding control that snaps each
+peak to its bin centre, merges the collisions, and passes the result through the
+\emph{identical} encoder at an identical parameter count, so each of the encoder
+and the mass axis --- the precision of the $m/z$ scale --- changes with the other
+held constant. On an openly licensed corpus of $414{,}992$ spectra from GNPS,
+MassBank and MoNA spanning $66$ instrument types, over $10{,}058$ held-out molecules
+and three seeds, replacing a $0.5$~Da binned baseline with a full-precision
+peak-set model raised macro AUPRC from $0.1130$ to $0.1709$ (chance $0.0085$). The
+control splits that paired gain of $+0.0579$ into $+0.0438$ ($95\%$ CI $+0.0365$ to
+$+0.0515$) for the encoder and $+0.0142$ ($+0.0097$ to $+0.0187$) for the mass axis.
+A further arm splits the encoder: presenting peaks as tokens rather than one dense
+vector is worth $+0.0460$, while adding self-attention to those tokens is worth
+$-0.0023$, an interval straddling zero. The gain is the interface, not the
+attention, and improvements measured against binned baselines are evidence about
+neither. Code: \url{https://github.com/xulinpan/cheminformatics}.
 \normalsize
 
 \hd{Scientific contribution}
 \small
-We introduce a rounding control that isolates the spectral representation from the
-encoder in MS/MS substructure prediction. Existing benchmarks compare featurizations
-bundled with the encoders that read them, because changing the representation
-ordinarily forces an architecture change; the control removes that coupling. Across three seeds and two corpora of sharply different acquisition
-diversity, the encoder accounts for $76\%$ and $58\%$ of the gain a two-arm
-comparison credits to the representation, and is in both cases the largest of the
-three effects we measure. The consequence for practice is that performance measured
-against a binned baseline confounds representation with architecture and cannot
-support claims about either alone.
+We introduce two controls that decompose the advantage peak-level models hold over
+binned baselines in MS/MS substructure prediction: a rounding control separating the
+spectral representation from the encoder, and an attention-free arm separating the
+peak-token interface from attention. Across three seeds and two corpora of sharply
+different acquisition diversity, the encoder accounts for $76\%$ and $58\%$ of the
+gain usually credited to the representation, and all of the encoder's share is the
+interface. Performance measured against a binned baseline therefore confounds three
+things at once and cannot support a claim about any of them alone.
 \normalsize
 
 \hd{Keywords}
@@ -227,6 +226,16 @@ grid whenever quantisation is active. A unit test asserts that two precursors in
 cell give identical embeddings under the control and different embeddings without
 it.
 
+\emph{M1D, the interface control.} Identical to M1R except that self-attention is
+removed from every block, leaving a position-wise network over the same peak tokens
+with the same acquisition conditioning, pooled by a masked mean rather than a
+learned token. Removing attention frees $66{,}048$ weights per block, so the
+feed-forward is widened in this arm alone to $548$ units; M1D therefore carries
+$714{,}528$ parameters against M1R's $712{,}336$, above rather than below. The arm
+separates the change of interface from the attention mechanism: peaks presented
+individually rather than summed into a dense vector, with no token able to see any
+other.
+
 \emph{M1, full precision.} Identical to M1R with quantisation disabled, so peaks
 reach the encoder at the precision the instrument reported. M1R and M1 are identical
 in every other configuration field and have identical parameter counts
@@ -276,9 +285,9 @@ $10^{-3}$, batches of $16$ molecules, mixed precision and gradient clipping at
 $1.0$. The loss was binary cross-entropy over the $512$ presence targets with an
 auxiliary negative-binomial term on $88$ functional-group counts, and checkpoints
 were selected on validation macro AUPRC. No hyperparameter search was performed for
-any arm. The four ladder arms were each trained three times under seeds
-$\{2026, 7, 13\}$ on each corpus --- twenty-four training runs in all --- and the
-sweep arms once each.
+any arm. The ladder arms were each trained three times under seeds
+$\{2026, 7, 13\}$: five arms on the open corpus and four on the single-library
+corpus, twenty-seven training runs in all, plus the sweep arms once each.
 
 \hd{Evaluation}
 We report macro AUPRC over targets with at least five held-out positives, with macro
@@ -301,6 +310,13 @@ constant, the representation's share is $+0.0142$ and the encoder's is $+0.0438$
 Both are real, and the smaller by a factor of three is the one the literature has
 been discussing.
 
+The encoder's share then divides again, and unevenly. Presenting the spectrum as
+peak tokens rather than one dense vector accounts for all of it; the attention
+built on those tokens accounts for none. A position-wise perceptron over peak
+tokens matches a four-block Transformer over the same tokens, with an interval on
+the difference that straddles zero. Whatever peak-level models gain over binned
+baselines, on this task they do not appear to gain it from attention.
+
 It is worth being clear about why this went unnoticed, because the answer is not
 inattention. The confound is forced by the data structures involved. A binned vector
 is dense and fixed-length; a peak set is sparse, variable-length and
@@ -315,11 +331,13 @@ looking for a universal encoder.
 
 Our result does not diminish the systems that abandoned binning. CSI:FingerID, MIST,
 DreaMS and TransExION are better than binned baselines, and this work does not
-dispute it. What it changes is the account of \emph{why}. To the extent that those
-systems differ from a binned baseline in both respects, our decomposition suggests
+dispute it. What it changes is the account of \emph{why}. Those systems differ from a binned
+baseline in both respects. To the extent that they do, our decomposition suggests
 the larger part of their advantage comes from the architectures they adopted rather
-than from the mass information they preserved. That is a testable claim about each of
-them, and the control we describe is cheap enough to apply.
+than from the mass information they preserved. More narrowly still, it suggests the
+gain lies in letting the model see peaks individually, not in any particular
+mechanism for relating them. That is a testable claim about each of them, and both
+controls we describe are cheap enough to apply.
 
 The two corpora sharpen this and add a caveat of their own. The encoder dominates on
 both, so the conclusion does not depend on a single dataset --- but its margin does.
@@ -366,13 +384,12 @@ be separated, and we declined to rank them there. The sweep carries one run per 
 and was run on one corpus, so only its endpoints should be read as findings and its
 $0.05$~Da threshold may not transfer. The instrument-diversity hypothesis above is
 untested: stratifying the mass-axis effect by instrument resolution would settle it
-and is the most informative experiment this work leaves undone. Finally, and most
-substantively, M1R does not separate dense from sparse encoding: a Transformer over
-bin-indexed tokens is not a perceptron over a dense vector, and some of what we
-attribute to the encoder may be that switch rather than the attention mechanism. A
-fifth arm --- a perceptron over the rounded peak set, or a Transformer over bin
-tokens without merging --- would resolve it, and we regard that as the natural next
-experiment rather than a caveat that undermines the present one.
+and is the most informative experiment this work leaves undone. Finally, the null result on
+attention is a null result, and we report it as one: the interval on $+{-}0.0023$
+straddles zero at this sample size and on this task, which is not the same as
+showing that attention cannot help. A larger corpus, a different target family, or
+a task where relating peaks to one another matters more than identifying them
+individually could all move it.
 
 The practical consequence concerns controls. A method evaluated against a binned
 baseline is compared against an arm handicapped in two ways at once, and on this

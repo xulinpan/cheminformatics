@@ -12,12 +12,15 @@ RP = json.load(open("dbf2_runs_open/representation_open.json"))
 RH = json.load(open("dbf2_runs/representation_heldout.json"))
 out = pathlib.Path("figures")
 
-RUNGS = ["M0", "M1R", "M1", "M2"]
-LAB = {"M0": "M0\nbinned\nMLP", "M1R": "M1R\nbinned\nTransformer",
-       "M1": "M1\nfull precision\nTransformer", "M2": "M2\nfull precision\n+ pooling"}
+RUNGS = ["M0", "M1D", "M1R", "M1", "M2"]
+LAB = {"M0": "M0\nbinned\ndense MLP",
+       "M1D": "M1D\nbinned\npeak tokens",
+       "M1R": "M1R\nbinned\n+ attention",
+       "M1": "M1\nfull precision\n+ attention",
+       "M2": "M2\nfull precision\n+ pooling"}
 
 # ------------------------------------------------ fig1: decomposition (open)
-fig, (a1, a2) = plt.subplots(1, 2, figsize=(8.6, 3.5))
+fig, (a1, a2) = plt.subplots(1, 2, figsize=(9.6, 3.6))
 a1.axhline(OP["chance"], color=F.MUTED, lw=1.0, ls=(0, (4, 3)), zorder=1)
 a1.text(-0.45, OP["chance"] - 0.005, f"chance {OP['chance']:.3f}", color=F.MUTED,
         fontsize=7.4, va="top", ha="left")
@@ -29,16 +32,16 @@ for i, r in enumerate(RUNGS):
     a1.plot([i], [t["mean"]], "o", color=c, ms=8.5, mec=F.SURFACE, mew=1.5, zorder=4)
     a1.text(i, t["mean"] + 0.010, f"{t['mean']:.4f}", ha="center", va="bottom",
             color=F.INK, fontsize=8.4, fontweight="bold")
-a1.set_xticks(range(4)); a1.set_xticklabels([LAB[r] for r in RUNGS],
-                                            color=F.INK_2, fontsize=7.2)
-a1.set_xlim(-0.5, 3.5); a1.set_ylim(-0.018, 0.225)
-F.finish(a1, "Four arms, one change each",
+a1.set_xticks(range(len(RUNGS))); a1.set_xticklabels([LAB[r] for r in RUNGS],
+                                            color=F.INK_2, fontsize=7.0)
+a1.set_xlim(-0.5, len(RUNGS) - 0.5); a1.set_ylim(-0.018, 0.225)
+F.finish(a1, "Five arms, one change each",
          "held-out macro AUPRC, 10,058 molecules; 3 seeds (small), mean (large)",
          ylabel="macro AUPRC")
 
-keys = [("M1R-M0", "encoder", F.SERIES[0]), ("M1-M1R", "mass axis", F.SERIES[1]),
-        ("M2-M1", "aggregation", F.SERIES[2])]
-y = np.arange(3)[::-1]
+keys = [("M1D-M0", "interface", F.SERIES[0]), ("M1R-M1D", "attention", F.MUTED),
+        ("M1-M1R", "mass axis", F.SERIES[1]), ("M2-M1", "aggregation", F.SERIES[2])]
+y = np.arange(len(keys))[::-1]
 a2.axvline(0, color=F.BASELINE, lw=1.0, zorder=1)
 for yi, (k, name, c) in zip(y, keys):
     v = OP["paired"][k]
@@ -46,13 +49,13 @@ for yi, (k, name, c) in zip(y, keys):
     a2.plot(OP["effects"][name]["values"], [yi] * 3, "o", color=c, ms=4.6, alpha=0.75,
             mec="none", zorder=5)
     a2.plot([v["mean"]], [yi], "o", color=c, ms=8.5, mec=F.SURFACE, mew=1.5, zorder=4)
-    a2.text(v["hi"] + 0.0018, yi + 0.13, f"+{v['mean']:.4f}", va="center",
+    a2.text(max(v["hi"], 0.0) + 0.0018, yi + 0.13, f"{v['mean']:+.4f}", va="center",
             color=F.INK, fontsize=8.4, fontweight="bold")
-    a2.text(v["hi"] + 0.0018, yi - 0.19, f"{v['frac_improved']:.0%} of targets",
+    a2.text(max(v["hi"], 0.0) + 0.0018, yi - 0.19, f"{v['frac_improved']:.0%} of targets",
             va="center", color=F.MUTED, fontsize=7.4)
 a2.set_yticks(y); a2.set_yticklabels([f"{k.split('-')[0]} − {k.split('-')[1]}\n{n}"
                                       for k, n, _ in keys], color=F.INK_2, fontsize=7.6)
-a2.set_ylim(-0.75, 2.6); a2.set_xlim(-0.002, 0.072)
+a2.set_ylim(-0.75, len(keys) - 0.4); a2.set_xlim(-0.012, 0.075)
 F.finish(a2, "What each change is worth", "paired over targets, 95% interval",
          xlabel="Δ AUPRC", grid_axis="x")
 fig.tight_layout(w_pad=2.4)

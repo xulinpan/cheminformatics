@@ -3,21 +3,26 @@
 % very different acquisition diversity plus the bin-width sweep.
 \section*{Results}
 
-\hd{The four arms}
+\hd{The five arms}
 The design is a ladder in which each arm differs from the one below it in exactly
 one respect (Table~\ref{tab:table1_arms_open}). M0 is the conventional baseline: a
-$0.5$~Da binned intensity vector read by a two-layer perceptron. M1R keeps that
-binned mass axis but replaces the perceptron with the peak-set Transformer, snapping
-each peak to its bin centre and merging the peaks that collide, so the encoder
-receives tokens carrying no more mass information than the binned vector did. M1
-hands the same Transformer the peaks at full precision. M2 adds hierarchical pooling
-over a molecule's spectra. M1R and M1 are identical in every configuration field but
-the width of the mass grid, and carry identical parameter counts. Each arm was
+$0.5$~Da binned intensity vector read by a two-layer perceptron. M1D keeps that binned mass axis but
+presents the spectrum as a set of peak tokens rather than one dense vector: each
+peak is snapped to its bin centre, colliding peaks are merged, and the tokens pass
+through a position-wise network with no attention, pooled by a masked mean. M1R
+adds self-attention to those same tokens. M1 hands the same attentive encoder the
+peaks at full precision. M2 adds hierarchical pooling over a molecule's spectra. M1R and M1 are identical in every configuration field but
+the width of the mass grid, and carry identical parameter counts; M1D differs from
+M1R only in carrying no attention, with its feed-forward widened so that it is not
+also the smaller arm ($714{,}528$ parameters against $712{,}336$). Each arm was
 trained three times, under seeds $\{2026, 7, 13\}$.
 
 M1R is the rung that makes the experiment mean anything. Without it, the contrast
 between a binned baseline and a peak-set model changes the mass axis and the encoder
-together, and a difference between them cannot be assigned to either.
+together, and a difference between them cannot be assigned to either. M1D then
+splits the encoder itself, separating the change of interface --- peaks presented
+individually rather than summed into a dense vector --- from the attention built on
+top of it.
 
 \input{figures/table1_arms_open.tex}
 
@@ -39,6 +44,26 @@ excludes zero and each improves a clear majority of targets --- but the larger b
 factor of three is the one that has nothing to do with how the spectrum is
 represented.
 
+\hd{Within the encoder, attention contributes nothing}
+The encoder effect itself divides further. Presenting the spectrum as peak tokens
+rather than one dense vector, with no attention anywhere in the network, is worth
+$+0.0460$ ($+0.0382$ to $+0.0548$; $76.7\%$ of targets), and it holds in all three
+seeds. Adding self-attention to those same tokens is worth $-0.0023$ ($-0.0066$ to
+$+0.0020$), an interval straddling zero, improving $54.3\%$ of targets --- barely
+more than half --- and positive in only one seed of three. The two sum to the
+encoder effect exactly.
+
+The interface accounts for $105\%$ of the encoder effect and attention for $-5\%$.
+We do not read the negative sign as evidence that attention hurts; we read the
+interval as evidence that it does nothing measurable here. What matters is that a
+position-wise perceptron over peak tokens captures the entire advantage that a
+four-block Transformer over the same tokens captures, at a parameter count slightly
+in its favour.
+
+This resolves a question the design left open in its first form. The contrast
+between M0 and M1R changed both the interface and the network family, so part of
+what we called ``the encoder'' might have been either. It is the interface.
+
 \input{figures/table2_effects_open.tex}
 
 \begin{figure}[htbp]
@@ -52,7 +77,8 @@ bootstrap intervals; small dots are the per-seed effect sizes.}
 \end{figure}
 
 \hd{The ordering is stable across seeds}
-All three pairwise orderings hold in every seed. The encoder effect exceeds the
+All three pairwise orderings among the encoder, mass-axis and aggregation effects
+hold in every seed. The encoder effect exceeds the
 mass-axis effect by $+0.0331$, $+0.0288$ and $+0.0268$, and the aggregation effect
 by $+0.0303$, $+0.0243$ and $+0.0231$; aggregation exceeds the mass axis by
 $+0.0028$, $+0.0045$ and $+0.0038$. The ranking encoder $>$ aggregation $>$ mass

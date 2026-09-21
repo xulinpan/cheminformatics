@@ -29,8 +29,9 @@ regenerated from saved run artefacts by \texttt{scripts/make\_supplementary.py} 
 
 \section*{S1\quad Per-arm, per-seed metrics}
 
-Table~\ref{tab:s1} gives every trained arm on both corpora. Twenty-four training
-runs: four arms $\times$ three seeds $\times$ two corpora. Parameter counts are
+Table~\ref{tab:s1} gives every trained arm on both corpora. Twenty-seven training
+runs: five arms $\times$ three seeds on the open corpus, four $\times$ three on the
+single-library corpus. Parameter counts are
 identical between M1R and M1 by construction, and the binned baseline M0 carries
 $63\%$ more parameters than either.
 
@@ -48,6 +49,9 @@ corpus & arm & seed & parameters & best epoch & macro AUPRC & macro AUROC & Brie
 open & M0  & 2026 & 1,164,560 & 14 & 0.1120 & 0.8607 & 0.00555 \\
 open & M0  & 7    & 1,164,560 & 14 & 0.1143 & 0.8613 & 0.00554 \\
 open & M0  & 13   & 1,164,560 & 13 & 0.1126 & 0.8610 & 0.00554 \\
+open & M1D & 2026 & 714,528   & 12 & 0.1616 & 0.8930 & 0.00522 \\
+open & M1D & 7    & 714,528   & 13 & 0.1569 & 0.8915 & 0.00527 \\
+open & M1D & 13   & 714,528   & 14 & 0.1585 & 0.8940 & 0.00524 \\
 open & M1R & 2026 & 712,336   & 14 & 0.1591 & 0.8991 & 0.00525 \\
 open & M1R & 7    & 712,336   & 13 & 0.1570 & 0.8980 & 0.00525 \\
 open & M1R & 13   & 712,336   & 14 & 0.1541 & 0.8960 & 0.00526 \\
@@ -90,6 +94,8 @@ is checked within each seed; Table~\ref{tab:s3} reports those checks.
 \toprule
 corpus & effect & seed 2026 & seed 7 & seed 13 & mean & SD \\
 \midrule
+open & interface (M1D $-$ M0)   & $+0.0496$ & $+0.0426$ & $+0.0459$ & $+0.0460$ & 0.0035 \\
+open & attention (M1R $-$ M1D)  & $-0.0025$ & $+0.0001$ & $-0.0045$ & $-0.0023$ & 0.0023 \\
 open & encoder (M1R $-$ M0)     & $+0.0471$ & $+0.0427$ & $+0.0415$ & $+0.0438$ & 0.0030 \\
 open & mass axis (M1 $-$ M1R)   & $+0.0140$ & $+0.0139$ & $+0.0147$ & $+0.0142$ & 0.0004 \\
 open & aggregation (M2 $-$ M1)  & $+0.0168$ & $+0.0184$ & $+0.0184$ & $+0.0179$ & 0.0009 \\
@@ -136,11 +142,12 @@ Table~\ref{tab:s4} summarises them.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.66\linewidth]{figures/figS1_bootstrap_distributions.pdf}
-\caption{Bootstrap distributions of the three effects on each corpus. On the open
-corpus the encoder distribution is separated from the other two; on the
-single-library corpus all three overlap, and the mass-axis and aggregation
-distributions overlap heavily --- which is the same fact Table~\ref{tab:s3} records
-as a sign reversal.}
+\caption{Bootstrap distributions on each corpus. The open panel shows the encoder
+split into its two components: the interface distribution sits far from the others
+while the attention distribution is centred on zero. On the single-library corpus,
+which has no attention arm, the composite encoder effect is shown instead, and all
+three distributions overlap --- the mass-axis and aggregation ones heavily, which is
+the same fact Table~\ref{tab:s3} records as a sign reversal.}
 \label{fig:s1}
 \end{figure}
 
@@ -154,7 +161,9 @@ as a sign reversal.}
 \toprule
 corpus & effect & mean & SD & 2.5\% & 97.5\% \\
 \midrule
-open & encoder     & 0.04381 & 0.00391 & 0.03637 & 0.05173 \\
+open & interface   & 0.04612 & 0.00423 & 0.03824 & 0.05477 \\
+open & attention   & $-$0.00230 & 0.00221 & $-$0.00665 & 0.00196 \\
+open & encoder     & 0.04385 & 0.00384 & 0.03645 & 0.05150 \\
 open & mass axis   & 0.01416 & 0.00229 & 0.00972 & 0.01876 \\
 open & aggregation & 0.01788 & 0.00218 & 0.01372 & 0.02223 \\
 \midrule
@@ -175,6 +184,16 @@ its bootstrap interval, which is the statistical form of the ordering failure in
 Table~\ref{tab:s3}. A variance-components treatment with targets and seeds as
 crossed random effects would fold both into one interval and we regard it as the
 right analysis for a larger replicate count.
+
+\hd{The attention arm}
+M1D removes self-attention from every block while holding the mass axis, the peak
+tokens and the acquisition conditioning fixed, so that $\mathrm{M1D}-\mathrm{M0}$
+prices the interface and $\mathrm{M1R}-\mathrm{M1D}$ prices attention. Removing
+attention frees $66{,}048$ weights per block; the feed-forward is widened to $548$
+units in this arm alone so that the control is not also the smaller model
+($714{,}528$ parameters against $712{,}336$). The attention effect is the only one
+in this work whose interval includes zero, and it is also the only one positive in
+fewer than three seeds of three.
 
 \section*{S4\quad Per-target average precision}
 
