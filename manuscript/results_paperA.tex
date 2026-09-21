@@ -64,10 +64,10 @@ mass axis is not a marginal effect lost in noise, it is a small effect measured
 precisely.
 
 \hd{The same decomposition on a very different corpus}
-Because the finding is a claim about how the field should construct comparisons
-rather than about one dataset, we repeated the entire ladder on a second corpus with
-almost nothing in common with the first: a single in-house library, $99\%$ of whose
-spectra come from one instrument (timsTOF), against the open corpus's $66$
+The finding is a claim about how the field should construct comparisons, not about
+one dataset. We therefore repeated the entire ladder on a second corpus with almost
+nothing in common with the first. That corpus is a single in-house library, $99\%$
+of whose spectra come from one instrument (timsTOF), against the open corpus's $66$
 instrument types drawn from three public libraries
 (Fig.~\ref{fig:corpora}, Table~\ref{tab:table3_two_corpora}).
 
@@ -104,18 +104,17 @@ and $6.5\%$ respectively at $0.01$~Da.
 
 What a merged peak costs is compositional identity. Enumerating plausible CHNOS
 compositions within $10$~ppm places $328$ candidate fragment formulas inside a
-single $0.5$~Da bin at $m/z\,300$; the count is governed by the width of the mass
-window in the way Kind and Fiehn established for precursor formulas
-\cite{kind2007rules}, so a bin three orders of magnitude wider than the
-instrument's error discards essentially all of the discrimination the measurement
-bought.
+single $0.5$~Da bin at $m/z\,300$. The width of the mass window governs that count,
+in the way Kind and Fiehn established for precursor formulas \cite{kind2007rules}.
+A bin three orders of magnitude wider than the instrument's error therefore
+discards almost all of the discrimination the measurement bought.
 
-The two corpora therefore differ in the same direction on both quantities: the one
-that loses more peaks to binning is also the one where the mass axis is worth more
-($34.4\%$ and $+0.0268$; $23.6\%$ and $+0.0142$). The correspondence is not
-proportional --- absorption falls to $0.69$ of its value while the effect falls to
-$0.53$ --- so peak absorption is not a complete account of the cost, but it moves
-with it.
+The two corpora move in the same direction on both quantities. The one that loses
+more peaks to binning is also the one where the mass axis is worth more: $34.4\%$
+and $+0.0268$ against $23.6\%$ and $+0.0142$. The correspondence is not
+proportional, since absorption falls to $0.69$ of its value while the effect falls
+to $0.53$. Peak absorption is therefore not a complete account of the cost, but it
+does move with it.
 
 We offer one hypothesis for the difference, which our design does not test. The
 single-library corpus is almost entirely timsTOF, a high-resolution instrument on
@@ -149,11 +148,11 @@ than merely as a discriminator between candidate formulas.
 
 Two cautions. Each width was run once, so the non-monotonic dip at $0.25$ and
 $0.1$~Da, spanning $0.0066$, is unremarkable across five single runs and we read it
-as noise rather than structure. We tested whether it might instead be an aliasing
-artefact --- the sinusoidal basis has wavelengths that are integer divisors of these
-grid spacings, which would render some channels constant --- but only one to three
-of thirty-two channels are affected at any width and the count does not track
-performance ($r = -0.26$), so we discount that explanation. The sweep was run on the
+as noise rather than structure. We also tested an alternative explanation. The
+sinusoidal basis has wavelengths that are integer divisors of these grid spacings,
+which would render some channels constant. But only one to three of thirty-two
+channels are affected at any width, and the count does not track performance
+($r = -0.26$), so we discount aliasing. The sweep was run on the
 single-library corpus only; whether the $0.05$~Da threshold moves with instrument
 diversity is open.
 

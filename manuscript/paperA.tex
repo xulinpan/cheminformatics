@@ -357,14 +357,6 @@ disagreement may be ours. We cannot adjudicate this from our data, and flag it
 because a reader comparing the two papers will notice, and because the question of
 what bin width suffices is evidently not settled by either.
 
-The practical consequence concerns controls. A method evaluated against a binned
-baseline is compared against an arm handicapped in two ways at once, and on this
-evidence the larger handicap is architectural. A paper reporting a gain over such a
-baseline has not shown that its representation is responsible, whatever its
-discussion says. The remedy is inexpensive: report the comparator's encoder as
-explicitly as its representation, and where the claim is about representation,
-include an arm that changes only that.
-
 \hd{Limitations}
 The open corpus is roughly a sixth of the available spectra and the single-library
 corpus a tenth; absolute values will move with scale even if the ordering does not.
@@ -382,6 +374,14 @@ fifth arm --- a perceptron over the rounded peak set, or a Transformer over bin
 tokens without merging --- would resolve it, and we regard that as the natural next
 experiment rather than a caveat that undermines the present one.
 
+The practical consequence concerns controls. A method evaluated against a binned
+baseline is compared against an arm handicapped in two ways at once, and on this
+evidence the larger handicap is architectural. A paper reporting a gain over such a
+baseline has not shown that its representation is responsible, whatever its
+discussion says. The remedy is inexpensive: report the comparator's encoder as
+explicitly as its representation, and where the claim is about representation,
+include an arm that changes only that.
+
 \section*{Conclusion}
 
 Binned intensity vectors entered MS/MS machine learning from spectral library search,
@@ -396,8 +396,16 @@ molecules, $76\%$ of the gain attributed to the representation is the encoder
 aggregation $>$ mass axis holding in every seed. On a near-homogeneous single-library
 corpus the same decomposition gives $58\%$ and $42\%$. Mass precision matters, and
 matters more the more homogeneous and higher-resolution the instruments are, but on
-both corpora it matters less than the architecture adopted alongside it. Improvements
-measured against binned baselines cannot be used as evidence about either.
+both corpora it matters less than the architecture adopted alongside it, so
+improvements measured against binned baselines cannot be used as evidence about
+either.
+
+The control that shows this is cheap and not specific to mass spectrometry.
+Wherever a change of representation forces a change of architecture --- and that
+is the common case, not a rare one --- the richer representation can usually be
+impoverished in place while the interface is held fixed, turning a confounded
+comparison into a decomposition. We would encourage others to try it on their own
+baselines.
 
 \section*{Supplementary Information}
 \textbf{Additional file 1} (PDF) reports per-arm and per-seed metrics for all
@@ -427,10 +435,10 @@ number in this paper are available at
 \url{https://github.com/xulinpan/cheminformatics} under the MIT licence, including
 the script that builds the open subset and a document recording each source
 library's contribution. The primary corpus consists of the spectra contributed by
-GNPS, MassBank and MoNA, all of which are openly licensed and obtainable from those
-sources; the aggregated CASMI 2026 file from which we selected them is distributed
-by the competition organisers, and the in-house libraries it also contains are not
-redistributable and are not used in our primary experiments.
+GNPS, MassBank and MoNA. All three are openly licensed and obtainable from those
+sources. We selected them from the aggregated CASMI 2026 file, which the
+competition organisers distribute; the in-house libraries that file also contains
+are not redistributable, and are not used in our primary experiments.
 
 \section*{Declarations}
 \hd{Competing interests} The authors declare no competing interests.
