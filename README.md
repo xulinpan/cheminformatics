@@ -1,11 +1,11 @@
-# The encoder, not the bins: decomposing peak-level MS/MS gains
+# A fair binned baseline halves the peak-level advantage in tandem mass spectrometry
 
 Code, figures and manuscript source for a controlled decomposition of the gain that
 peak-level models show over binned baselines in tandem mass spectrometry.
 
 > **Status.** The manuscript in `manuscript/` is a working draft prepared for
 > submission to *Journal of Cheminformatics*. It has not yet been peer reviewed.
-> Its claims are current as of the open-corpus replication (three seeds, four arms).
+> Its claims are current as of the open-corpus replication (three seeds, five arms).
 > See [Open items](#open-items) for the controls that are still outstanding.
 
 ## The question
@@ -34,7 +34,7 @@ spectrum from GNPS, MassBank and MoNA: 414,992 spectra over 52,428 structures,
 
 | arm | mass axis | encoder | pooling | parameters | macro AUPRC | SD over seeds |
 |-----|-----------|---------|---------|-----------:|------------:|--------------:|
-| M0 | 0.5 Da bins | dense vector, MLP | mean | 1,164,560 | 0.1130 | 0.0012 |
+| M0 | 0.5 Da bins | dense vector, MLP | mean | 1,172,752 | 0.1418 | 0.0013 |
 | M1D | 0.5 Da bins | peak tokens, no attention | mean | 714,528 | 0.1590 | 0.0024 |
 | M1R | 0.5 Da bins | peak tokens, attention | mean | 712,336 | 0.1567 | 0.0025 |
 | M1 | full precision | peak tokens, attention | mean | 712,336 | 0.1709 | 0.0022 |
@@ -48,21 +48,30 @@ separate.
 
 | contrast | isolates | Δ AUPRC | 95% CI | targets improved |
 |----------|----------|--------:|--------|-----------------:|
-| M1D − M0 | interface | +0.0460 | [+0.0382, +0.0548] | 76.7% |
+| M1D − M0 | interface | +0.0172 | [+0.0102, +0.0242] | 58.0% |
 | M1R − M1D | attention | **−0.0023** | **[−0.0066, +0.0020]** | 54.3% |
-| M1R − M0 | encoder | +0.0438 | [+0.0365, +0.0515] | 79.2% |
-| M1 − M1R | mass axis | +0.0142 | [+0.0097, +0.0188] | 64.9% |
-| M2 − M1 | aggregation | +0.0179 | [+0.0137, +0.0222] | 63.7% |
-| M1 − M0 | encoder and mass axis | +0.0579 | [+0.0494, +0.0667] | 81.8% |
+| M1R − M0 | encoder | +0.0149 | [+0.0080, +0.0221] | 66.7% |
+| M1 − M1R | mass axis | +0.0142 | [+0.0097, +0.0187] | 64.9% |
+| M2 − M1 | aggregation | +0.0179 | [+0.0136, +0.0223] | 63.7% |
+| M1 − M0 | encoder and mass axis | +0.0291 | [+0.0208, +0.0371] | 72.5% |
 
-**76% of what a two-arm comparison credits to the spectral representation is the
-encoder.** The ranking encoder > aggregation > mass axis holds in all three seeds,
-and the mass-axis effect is the most stable across seeds (SD 0.0004) — a small
-effect measured precisely, not a noisy one.
+**Half of what a two-arm comparison credits to the spectral representation is the
+encoder — and half of that was the baseline's missing metadata.** The binned
+baseline in this work, and in the published comparisons it stands in for, was the
+only arm that could not see the collision energy, adduct, polarity or instrument:
+its encoder accepted the covariate vector and discarded it. Giving M0 the same
+conditioning every other arm already had raised it from 0.1130 to 0.1418 and cut the
+gain a two-arm comparison would report by 51%, from +0.0579 to +0.0291. What
+survives is a clean split: encoder +0.0149, mass axis +0.0142.
 
-**And all of the encoder's share is the interface, none of it attention.** M1D
-presents the same binned peaks as tokens with no attention anywhere in the network.
-It matches the attentive model (+0.0460 against the encoder's +0.0438), and adding
+**The encoder no longer dominates the mass axis.** Its 75.5% share of the M1 − M0
+gain fell to 51.3%, the two effects now overlap heavily, and their ordering reverses
+in one seed of three. Aggregation (+0.0179) is the largest single effect on both
+corpora and the only ordering that holds in every seed.
+
+**All of the encoder's share is the interface, none of it attention.** M1D presents
+the same binned peaks as tokens with no attention anywhere in the network. It
+matches the attentive model (+0.0172 against the encoder's +0.0149), and adding
 attention to those tokens is worth −0.0023 with an interval straddling zero,
 positive in one seed of three. A position-wise perceptron over peak tokens captures
 the entire advantage a four-block Transformer captures.
@@ -76,17 +85,18 @@ ladder there gives the same qualitative answer with a different balance:
 
 | effect | single library (99% timsTOF) | open (66 instruments) |
 |---|---:|---:|
-| encoder | +0.0377 | +0.0438 |
 | mass axis | +0.0268 | +0.0142 |
 | aggregation | +0.0322 | +0.0179 |
-| encoder share of M1 − M0 | 58.5% | 75.5% |
 | peaks absorbed at 0.5 Da | 34.4% | 23.6% |
 
-The encoder dominates on both, so the conclusion does not rest on one dataset — but
-its margin does. As the instrument mix widens from one to 66, mass precision is
-worth roughly half as much. Our hypothesis is that a heterogeneous corpus contains
-many spectra whose reported *m/z* carries little real precision; that is untested,
-and named in the paper as the most informative experiment left undone.
+Only the contrasts that do not involve M0 are comparable across the two corpora: the
+single-library M0 runs predate the covariate correction and have not been refit, so
+the encoder and interface effects are reported for the open corpus alone. On the two
+contrasts that are comparable, both hold their sign and ordering, and the mass axis
+is worth roughly half as much once the instrument mix widens from one to 66. Our
+hypothesis is that a heterogeneous corpus contains many spectra whose reported *m/z*
+carries little real precision; that is untested, and named in the paper as the most
+informative experiment left undone.
 
 ## Repository layout
 
@@ -173,10 +183,10 @@ established.
    fetch, or a DOI deposit of the assembled subset, is needed before the work is
    reproducible without a competition account.
 2. **No arm was tuned.** An untuned MLP and an untuned Transformer are not
-   equidistant from their optima, and the schedule was chosen for the latter. Since
-   the encoder now accounts for 76% of the gain, a learning-rate sweep for M0 alone
-   — reporting its best configuration against M1R's untuned one — would make the
-   headline conservative rather than vulnerable.
+   equidistant from their optima, and the schedule was chosen for the latter. Now
+   that a fair baseline has halved the reported gain, a learning-rate sweep for M0
+   alone — reporting its best configuration against M1R's untuned one — is the
+   single control most likely to move the remaining +0.0291 again.
 3. **The reported intervals do not cover seed variance.** Average precision is
    averaged across seeds and then bootstrapped over targets, so the interval
    describes target sampling only; seed spread is reported separately. A
@@ -196,9 +206,13 @@ established.
    mass axis and same peak tokens as M1R, with self-attention removed and the
    feed-forward widened so it is not also the smaller arm (714,528 against
    712,336). **Resolved:** the interface accounts for the whole effect
-   (+0.0460) and attention for none (−0.0023, interval includes zero).
+   (+0.0172) and attention for none (−0.0023, interval includes zero).
 8. **No external baseline, and the endpoint is a proxy.** Every arm here is ours, and
    whether the gain propagates to top-*k* structure retrieval is not shown.
+9. **The single-library ladder has not been refit under the corrected baseline.**
+   Its M0 runs predate the covariate fix, so that corpus contributes nothing to the
+   encoder and interface claims. Three M0 runs (roughly ten minutes) would restore
+   the two-corpus comparison in full.
 
 ## Citing
 

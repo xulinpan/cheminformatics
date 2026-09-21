@@ -8,7 +8,7 @@ RH = json.load(open("dbf2_runs/representation_heldout.json"))
 RP = json.load(open("dbf2_runs_open/representation_open.json"))
 out = pathlib.Path("figures")
 
-DESC = {"M0":  ("0.5 Da bins", "dense vector, MLP", "mean", "1,164,560"),
+DESC = {"M0":  ("0.5 Da bins", "dense vector, MLP", "mean", "1,172,752"),
         "M1D": ("0.5 Da bins", "peak tokens, no attention", "mean", "714,528"),
         "M1R": ("0.5 Da bins", "peak tokens, attention", "mean", "712,336"),
         "M1":  ("full precision", "peak tokens, attention", "mean", "712,336"),

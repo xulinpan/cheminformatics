@@ -6,7 +6,9 @@
 \hd{The five arms}
 The design is a ladder in which each arm differs from the one below it in exactly
 one respect (Table~\ref{tab:table1_arms_open}). M0 is the conventional baseline: a
-$0.5$~Da binned intensity vector read by a two-layer perceptron. M1D keeps that binned mass axis but
+$0.5$~Da binned intensity vector read by a two-layer perceptron, with the
+acquisition covariates concatenated to that vector so the baseline sees the same
+conditioning information as every other arm (Sect.~\ref{sec:fair}). M1D keeps that binned mass axis but
 presents the spectrum as a set of peak tokens rather than one dense vector: each
 peak is snapped to its bin centre, colliding peaks are merged, and the tokens pass
 through a position-wise network with no attention, pooled by a masked mean. M1R
@@ -26,34 +28,54 @@ top of it.
 
 \input{figures/table1_arms_open.tex}
 
-\hd{Three quarters of the apparent representation gain is the encoder}
-Replacing the binned vector with a full-precision peak set raises macro AUPRC from
-$0.1130$ to $0.1709$ against a chance level of $0.0085$, a paired per-target gain of
-$+0.0579$ ($95\%$ CI $+0.0494$ to $+0.0667$) improving $81.8\%$ of targets --- the
-effect a two-arm comparison would report. The control splits it
-(Fig.~\ref{fig:decomposition}, Table~\ref{tab:table2_effects_open}). Changing the
-encoder alone, with the mass axis binned on both sides, is worth $+0.0438$
-($+0.0364$ to $+0.0517$; $79.2\%$ of targets). Changing the mass axis alone, with
-the same encoder on both sides, is worth $+0.0142$ ($+0.0097$ to $+0.0188$; $64.9\%$
-of targets). The two components sum to the joint effect exactly, as they must, since
-each target's contribution enters both sides linearly.
+\hd{Half of the apparent advantage is the baseline's missing metadata}
+\label{sec:fair}
+Our first version of this experiment reproduced the standard baseline faithfully,
+and that turned out to include a handicap we had not intended. The binned encoder
+took the acquisition covariates as an argument and never used them, so M0 alone
+could not see the collision energy, adduct, polarity or instrument, while every
+peak-set arm conditioned each of its blocks on them. Collision energy largely
+determines which bonds break, so a model blind to it must marginalise over every
+energy in the corpus.
 
-Seventy-six per cent of what a two-arm comparison would credit to the spectral
-representation is therefore the encoder. Both components are real --- each interval
-excludes zero and each improves a clear majority of targets --- but the larger by a
-factor of three is the one that has nothing to do with how the spectrum is
-represented.
+Concatenating the same covariate embedding to the binned vector raises M0 from
+$0.1130$ to $0.1418$, an improvement of $+0.0288$ --- larger than any of the three
+effects this paper set out to measure. The gap a two-arm comparison would report
+falls with it, from $+0.0579$ to $+0.0291$. Half of what looked like the advantage
+of reading peaks at full precision was the baseline not being told how the spectrum
+was acquired.
+
+We report this because it is the paper's own thesis turned on the paper. Every
+number below is measured against the conditioned baseline.
+
+\hd{Against a fair baseline, the encoder and the mass axis are worth the same}
+Replacing the binned vector with a full-precision peak set raises macro AUPRC from
+$0.1418$ to $0.1709$ against a chance level of $0.0085$, a paired per-target gain of
+$+0.0291$ ($95\%$ CI $+0.0208$ to $+0.0371$) improving $72.5\%$ of targets. The
+control splits it (Fig.~\ref{fig:decomposition},
+Table~\ref{tab:table2_effects_open}). Changing the encoder alone, with the mass axis
+binned on both sides, is worth $+0.0149$ ($+0.0080$ to $+0.0221$; $66.7\%$ of
+targets). Changing the mass axis alone, with the same encoder on both sides, is
+worth $+0.0142$ ($+0.0097$ to $+0.0187$; $64.9\%$ of targets). The two sum to the
+joint effect exactly, as they must, since each target's contribution enters both
+sides linearly.
+
+The two halves are therefore indistinguishable: $51\%$ encoder and $49\%$ mass axis.
+Against the unconditioned baseline the same decomposition read $76\%$ and $24\%$.
+Both components remain real, each interval excluding zero and each improving a clear
+majority of targets, but the claim that one dominates the other does not survive a
+baseline that has been told the collision energy.
 
 \hd{Within the encoder, attention contributes nothing}
 The encoder effect itself divides further. Presenting the spectrum as peak tokens
 rather than one dense vector, with no attention anywhere in the network, is worth
-$+0.0460$ ($+0.0382$ to $+0.0548$; $76.7\%$ of targets), and it holds in all three
+$+0.0172$ ($+0.0102$ to $+0.0242$; $58.0\%$ of targets), and it holds in all three
 seeds. Adding self-attention to those same tokens is worth $-0.0023$ ($-0.0066$ to
 $+0.0020$), an interval straddling zero, improving $54.3\%$ of targets --- barely
 more than half --- and positive in only one seed of three. The two sum to the
 encoder effect exactly.
 
-The interface accounts for $105\%$ of the encoder effect and attention for $-5\%$.
+The interface accounts for $115\%$ of the encoder effect and attention for $-15\%$.
 We do not read the negative sign as evidence that attention hurts; we read the
 interval as evidence that it does nothing measurable here. What matters is that a
 position-wise perceptron over peak tokens captures the entire advantage that a
@@ -76,18 +98,22 @@ bootstrap intervals; small dots are the per-seed effect sizes.}
 \label{fig:decomposition}
 \end{figure}
 
-\hd{The ordering is stable across seeds}
-All three pairwise orderings among the encoder, mass-axis and aggregation effects
-hold in every seed. The encoder effect exceeds the
-mass-axis effect by $+0.0331$, $+0.0288$ and $+0.0268$, and the aggregation effect
-by $+0.0303$, $+0.0243$ and $+0.0231$; aggregation exceeds the mass axis by
-$+0.0028$, $+0.0045$ and $+0.0038$. The ranking encoder $>$ aggregation $>$ mass
-axis therefore holds three times out of three, and the mass-axis effect is the most
-stable of the three across seeds (SD $0.0004$, against $0.0030$ for the encoder).
+\hd{What the ordering supports, and what it no longer does}
+Aggregation is now the largest of the three effects, exceeding the encoder in all
+three seeds ($+0.0009$, $+0.0030$, $+0.0049$) and the mass axis in all three
+($+0.0028$, $+0.0045$, $+0.0037$). That ranking we regard as established.
 
-That the smallest effect is also the most reproducible is worth stating plainly: the
-mass axis is not a marginal effect lost in noise, it is a small effect measured
-precisely.
+The encoder and the mass axis cannot be separated. Their difference is $+0.0019$,
+$+0.0015$ and $-0.0012$ across seeds: positive twice, negative once, and an order of
+magnitude smaller than either effect. Against the unconditioned baseline the encoder
+led by $+0.0296$ and that ordering held in every seed. Conditioning the baseline
+erased the lead.
+
+The mass-axis effect remains the most precisely measured quantity in the study, with
+a seed standard deviation of $0.0004$ against $0.0013$ for the encoder and $0.0009$
+for aggregation. That the smallest effects here are also the most reproducible is
+worth stating plainly: they are small effects measured precisely, not noise.
+
 
 \hd{The same decomposition on a very different corpus}
 The finding is a claim about how the field should construct comparisons, not about
@@ -97,16 +123,19 @@ of whose spectra come from one instrument (timsTOF), against the open corpus's $
 instrument types drawn from three public libraries
 (Fig.~\ref{fig:corpora}, Table~\ref{tab:table3_two_corpora}).
 
-The qualitative result is unchanged --- the encoder dominates on both --- but the
-balance shifts. On the single-library corpus the encoder accounts for $58.5\%$ of
-the joint gain; on the open corpus, $75.5\%$. The mass-axis effect falls from
-$+0.0268$ to $+0.0142$, roughly halving, while the encoder effect grows slightly
-from $+0.0377$ to $+0.0438$.
+The mass-axis effect falls from $+0.0268$ on the single-library corpus to $+0.0142$
+on the open one, roughly halving as the instrument mix widens from one to $66$.
+Aggregation falls comparably, from $+0.0322$ to $+0.0179$. Both comparisons are
+between arms that differ from each other in the same way on both corpora, so both
+are sound.
 
-The single-library corpus also leaves one ordering unresolved that the open corpus
-settles. There, the mass axis averaged $+0.0268$ against aggregation's $+0.0322$,
-but the sign of that difference reversed under one of three seeds, and we could not
-rank them. On the open corpus the same comparison holds in all three seeds.
+The encoder effect is not yet comparable across the two. The single-library arms
+were fitted before the baseline was given the acquisition covariates, so its
+$+0.0377$ is measured against an unconditioned M0 and the open corpus's $+0.0149$
+against a conditioned one. Rerunning M0 on the single-library corpus is the obvious
+remedy and we report the two encoder figures as not comparable until it is done. The
+mass-axis and aggregation rows in Table~\ref{tab:table3_two_corpora} are unaffected,
+because neither contrast involves M0.
 
 \begin{figure}[htbp]
 \centering

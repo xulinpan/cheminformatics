@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software or refer to these results, please cite the paper below."
-title: "The encoder, not the bins: decomposing peak-level MS/MS gains"
+title: "A fair binned baseline halves the peak-level advantage in tandem mass spectrometry"
 abstract: >-
   Code and analysis supporting a controlled decomposition of the gain that
   peak-level models show over binned baselines in MS/MS substructure prediction.

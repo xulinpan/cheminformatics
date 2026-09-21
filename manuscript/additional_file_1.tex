@@ -46,9 +46,9 @@ corpus. Machine-readable: \texttt{results/si\_table\_s1\_arm\_metrics.csv}.}
 \toprule
 corpus & arm & seed & parameters & best epoch & macro AUPRC & macro AUROC & Brier \\
 \midrule
-open & M0  & 2026 & 1,164,560 & 14 & 0.1120 & 0.8607 & 0.00555 \\
-open & M0  & 7    & 1,164,560 & 14 & 0.1143 & 0.8613 & 0.00554 \\
-open & M0  & 13   & 1,164,560 & 13 & 0.1126 & 0.8610 & 0.00554 \\
+open & M0  & 2026 & 1,172,752 & 13 & 0.1433 & 0.8815 & 0.00531 \\
+open & M0  & 7    & 1,172,752 & 14 & 0.1416 & 0.8793 & 0.00534 \\
+open & M0  & 13   & 1,172,752 & 14 & 0.1406 & 0.8788 & 0.00535 \\
 open & M1D & 2026 & 714,528   & 12 & 0.1616 & 0.8930 & 0.00522 \\
 open & M1D & 7    & 714,528   & 13 & 0.1569 & 0.8915 & 0.00527 \\
 open & M1D & 13   & 714,528   & 14 & 0.1585 & 0.8940 & 0.00524 \\
@@ -78,6 +78,19 @@ single library & M2  & 13   & 829,584   & 14 & 0.1444 & 0.8837 & 0.00641 \\
 \end{tabular}
 \end{table}
 
+The five open-corpus arms are all conditioned on the acquisition covariates
+(collision energy, adduct, polarity, instrument). In earlier versions of this work
+M0 alone was not: its encoder accepted the covariate vector and discarded it, so the
+binned baseline was the only arm predicting without knowing how the spectrum had
+been acquired. The M0 rows above are refits under the corrected baseline and
+supersede the figures reported previously; the main text states what the correction
+cost the headline claim. The three single-library M0 rows are the original,
+un-reconditioned runs and carry the smaller parameter count ($1{,}164{,}560$ against
+the corrected baseline's $1{,}172{,}752$) that marks them as such. They are retained because the
+single-library ladder is used in the main text only for the mass-axis and
+aggregation contrasts, neither of which involves M0; the encoder and interface
+contrasts are reported for the open corpus alone.
+
 \section*{S2\quad Per-seed effect sizes and ordering checks}
 
 Each effect is the difference between two arms trained under the \emph{same} seed,
@@ -94,9 +107,9 @@ is checked within each seed; Table~\ref{tab:s3} reports those checks.
 \toprule
 corpus & effect & seed 2026 & seed 7 & seed 13 & mean & SD \\
 \midrule
-open & interface (M1D $-$ M0)   & $+0.0496$ & $+0.0426$ & $+0.0459$ & $+0.0460$ & 0.0035 \\
+open & interface (M1D $-$ M0)   & $+0.0183$ & $+0.0153$ & $+0.0179$ & $+0.0172$ & 0.0016 \\
 open & attention (M1R $-$ M1D)  & $-0.0025$ & $+0.0001$ & $-0.0045$ & $-0.0023$ & 0.0023 \\
-open & encoder (M1R $-$ M0)     & $+0.0471$ & $+0.0427$ & $+0.0415$ & $+0.0438$ & 0.0030 \\
+open & encoder (M1R $-$ M0)     & $+0.0159$ & $+0.0154$ & $+0.0134$ & $+0.0149$ & 0.0013 \\
 open & mass axis (M1 $-$ M1R)   & $+0.0140$ & $+0.0139$ & $+0.0147$ & $+0.0142$ & 0.0004 \\
 open & aggregation (M2 $-$ M1)  & $+0.0168$ & $+0.0184$ & $+0.0184$ & $+0.0179$ & 0.0009 \\
 \midrule
@@ -118,8 +131,8 @@ seeds.}
 \toprule
 corpus & comparison & seed 2026 & seed 7 & seed 13 & mean & verdict \\
 \midrule
-open & encoder $-$ mass axis   & $+0.0331$ & $+0.0288$ & $+0.0268$ & $+0.0296$ & 3/3 consistent \\
-open & encoder $-$ aggregation & $+0.0303$ & $+0.0243$ & $+0.0231$ & $+0.0259$ & 3/3 consistent \\
+open & encoder $-$ mass axis   & $+0.0019$ & $+0.0015$ & $-0.0012$ & $+0.0007$ & \textbf{reverses} \\
+open & encoder $-$ aggregation & $-0.0009$ & $-0.0030$ & $-0.0049$ & $-0.0029$ & 3/3 consistent \\
 open & mass axis $-$ aggregation & $-0.0028$ & $-0.0045$ & $-0.0037$ & $-0.0037$ & 3/3 consistent \\
 \midrule
 single library & encoder $-$ mass axis   & $+0.0139$ & $+0.0154$ & $+0.0033$ & $+0.0109$ & 3/3 consistent \\
@@ -161,11 +174,11 @@ the same fact Table~\ref{tab:s3} records as a sign reversal.}
 \toprule
 corpus & effect & mean & SD & 2.5\% & 97.5\% \\
 \midrule
-open & interface   & 0.04612 & 0.00423 & 0.03824 & 0.05477 \\
+open & interface   & 0.01727 & 0.00360 & 0.01020 & 0.02419 \\
 open & attention   & $-$0.00230 & 0.00221 & $-$0.00665 & 0.00196 \\
-open & encoder     & 0.04385 & 0.00384 & 0.03645 & 0.05150 \\
-open & mass axis   & 0.01416 & 0.00229 & 0.00972 & 0.01876 \\
-open & aggregation & 0.01788 & 0.00218 & 0.01372 & 0.02223 \\
+open & encoder     & 0.01498 & 0.00362 & 0.00798 & 0.02210 \\
+open & mass axis   & 0.01415 & 0.00230 & 0.00969 & 0.01865 \\
+open & aggregation & 0.01785 & 0.00222 & 0.01360 & 0.02233 \\
 \midrule
 single library & encoder     & 0.03768 & 0.00239 & 0.03311 & 0.04245 \\
 single library & mass axis   & 0.02678 & 0.00243 & 0.02208 & 0.03168 \\
