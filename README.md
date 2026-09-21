@@ -61,7 +61,7 @@ baseline in this work, and in the published comparisons it stands in for, was th
 only arm that could not see the collision energy, adduct, polarity or instrument:
 its encoder accepted the covariate vector and discarded it. Giving M0 the same
 conditioning every other arm already had raised it from 0.1130 to 0.1418 and cut the
-gain a two-arm comparison would report by 51%, from +0.0579 to +0.0291. What
+gain a two-arm comparison would report by 50%, from +0.0579 to +0.0291. What
 survives is a clean split: encoder +0.0149, mass axis +0.0142.
 
 **The encoder no longer dominates the mass axis.** Its 75.5% share of the M1 − M0
