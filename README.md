@@ -1,4 +1,4 @@
-# A fair binned baseline halves the peak-level advantage in tandem mass spectrometry
+# A metadata-matched binned baseline halves the apparent peak-level advantage in MS/MS substructure prediction
 
 Code, figures and manuscript source for a controlled decomposition of the gain that
 peak-level models show over binned baselines in tandem mass spectrometry.
@@ -32,7 +32,7 @@ spectrum from GNPS, MassBank and MoNA: 414,992 spectra over 52,428 structures,
 66 instrument types. Held-out fold 0 is 10,058 molecules; chance macro AUPRC is
 0.0085 over 433 scored targets.
 
-| arm | mass axis | encoder | pooling | parameters | macro AUPRC | SD over seeds |
+| arm | mass axis | encoder/interface | peak pooling | parameters | macro AUPRC | SD over seeds |
 |-----|-----------|---------|---------|-----------:|------------:|--------------:|
 | M0 | 0.5 Da bins | dense vector, MLP | mean | 1,172,752 | 0.1418 | 0.0013 |
 | M1D | 0.5 Da bins | peak tokens, no attention | mean | 714,528 | 0.1590 | 0.0024 |
@@ -48,33 +48,40 @@ separate.
 
 | contrast | isolates | Δ AUPRC | 95% CI | targets improved |
 |----------|----------|--------:|--------|-----------------:|
-| M1D − M0 | interface | +0.0172 | [+0.0102, +0.0242] | 58.0% |
-| M1R − M1D | attention | **−0.0023** | **[−0.0066, +0.0020]** | 54.3% |
-| M1R − M0 | encoder | +0.0149 | [+0.0080, +0.0221] | 66.7% |
-| M1 − M1R | mass axis | +0.0142 | [+0.0097, +0.0187] | 64.9% |
-| M2 − M1 | aggregation | +0.0179 | [+0.0136, +0.0223] | 63.7% |
-| M1 − M0 | encoder and mass axis | +0.0291 | [+0.0208, +0.0371] | 72.5% |
+| M1D − M0 | binned token-encoder package † | +0.0172 | [+0.0102, +0.0242] | 58.0% |
+| M1R − M1D | attention-bearing vs attention-free † | **−0.0023** | **[−0.0066, +0.0020]** | 54.3% |
+| M1R − M0 | rounded token-encoder package † | +0.0149 | [+0.0080, +0.0221] | 66.7% |
+| M1 − M1R | **mass-axis precision** | +0.0142 | [+0.0097, +0.0187] | 64.9% |
+| M2 − M1 | **hierarchical aggregation** | +0.0179 | [+0.0136, +0.0223] | 63.7% |
+| M1 − M0 | joint token-pipeline and mass-axis | +0.0291 | [+0.0208, +0.0371] | 72.5% |
 
-**Half of what a two-arm comparison credits to the spectral representation is the
-encoder — and half of that was the baseline's missing metadata.** The binned
+† composite. The arms either side of these three differ in more than the named
+factor — in pooling, in feed-forward width, or in how the acquisition covariates
+are injected — so the increment belongs to the package, not to one component. Only
+the two contrasts in bold change a single thing.
+
+**Half of what a two-arm comparison credits to the spectral representation was the
+baseline's missing metadata.** The binned
 baseline in this work, and in the published comparisons it stands in for, was the
 only arm that could not see the collision energy, adduct, polarity or instrument:
 its encoder accepted the covariate vector and discarded it. Giving M0 the same
 conditioning every other arm already had raised it from 0.1130 to 0.1418 and cut the
 gain a two-arm comparison would report by 50%, from +0.0579 to +0.0291. What
-survives is a clean split: encoder +0.0149, mass axis +0.0142.
+survives splits into +0.0149 for M1R − M0 and +0.0142 for the mass axis — but only
+the second is a one-factor contrast.
 
-**The encoder no longer dominates the mass axis.** Its 75.5% share of the M1 − M0
-gain fell to 51.3%, the two effects now overlap heavily, and their ordering reverses
-in one seed of three. Aggregation (+0.0179) is the largest single effect on both
-corpora and the only ordering that holds in every seed.
+**Neither remaining increment dominates the other.** The M1R − M0 share of the
+M1 − M0 gain is 51.3% on the open corpus and 46.7% on the single-library one, the
+two overlap heavily, and their difference changes sign across seeds on both.
+Aggregation (+0.0179) exceeds M1R − M0 in every seed on both corpora, which is the
+one ordering the paper claims.
 
-**All of the encoder's share is the interface, none of it attention.** M1D presents
-the same binned peaks as tokens with no attention anywhere in the network. It
-matches the attentive model (+0.0172 against the encoder's +0.0149), and adding
-attention to those tokens is worth −0.0023 with an interval straddling zero,
-positive in one seed of three. A position-wise perceptron over peak tokens captures
-the entire advantage a four-block Transformer captures.
+**The attention-bearing configuration buys nothing measurable here.** M1D presents
+the same rounded peaks as tokens with no attention anywhere in the network and
+matches the attention-bearing model (−0.0023, interval straddling zero, positive in
+one seed of three). This is a sensitivity comparison, not an attention ablation:
+M1D and M1R also differ in pooling and feed-forward width. An exact ablation holding
+both fixed has not been run, and until it is, nothing here prices attention.
 
 ### The same decomposition on a second, deliberately contrasting corpus
 
@@ -85,17 +92,19 @@ ladder there gives the same qualitative answer with a different balance:
 
 | effect | single library (99% timsTOF) | open (66 instruments) |
 |---|---:|---:|
-| encoder | +0.0234 | +0.0149 |
+| M1R − M0 (composite) | +0.0234 | +0.0149 |
 | mass axis | +0.0268 | +0.0142 |
 | aggregation | +0.0322 | +0.0179 |
-| encoder share of M1 − M0 | 46.7% | 51.3% |
+| M1R − M0 share of M1 − M0 | 46.7% | 51.3% |
 | M0's gain from conditioning | +0.0142 | +0.0288 |
 | peaks absorbed at 0.5 Da | 34.4% | 23.6% |
 
 Both ladders are fitted against the conditioned baseline, so every row is
-comparable. The finding replicates: the encoder and the mass axis are
-indistinguishable on both corpora, their difference reverses across seeds on both
-(in opposite directions), and aggregation beats the encoder in every seed on both.
+comparable. The pattern holds on both: M1R − M0 and the mass axis are
+indistinguishable, their difference changes sign across seeds, and aggregation beats
+M1R − M0 in every seed. The second corpus is a contrasting sensitivity corpus rather
+than an independent replication — it is a contiguous in-house slice of the same
+CASMI aggregate, run through the same code.
 Every effect is smaller on the open corpus, the mass axis roughly halving as the
 instrument mix widens from one to 66. Our hypothesis is that a heterogeneous corpus
 contains many spectra whose reported *m/z* carries little real precision; that is
@@ -207,16 +216,20 @@ established.
    turn the explanation into a finding.
 6. **The bin-width sweep is single-seed and single-corpus**, so only its endpoints
    should be read as findings and its 0.05 Da threshold may not transfer.
-7. **M1R does not separate dense from sparse encoding.** A Transformer over
-   bin-indexed tokens is not a perceptron over a dense vector; some of the encoder
-   effect may be that switch. Rung **M1D** now exists to resolve it — same binned
-   mass axis and same peak tokens as M1R, with self-attention removed and the
-   feed-forward widened so it is not also the smaller arm (714,528 against
-   712,336). **Resolved:** the interface accounts for the whole effect
-   (+0.0172) and attention for none (−0.0023, interval includes zero).
-8. **No external baseline, and the endpoint is a proxy.** Every arm here is ours, and
+7. **Neither composite contrast has been reduced to one factor.** M1R − M0 changes
+   the input interface, the network family, the peak-pooling rule *and* the
+   mechanism by which acquisition covariates enter (concatenation against adaptive
+   layer normalisation). M1R − M1D changes attention, pooling and feed-forward width
+   together. Two runs would fix this: a dense baseline conditioned by FiLM/AdaLN
+   rather than concatenation, and an attention ablation holding pooling and width
+   fixed on both sides.
+8. **No arm was tuned, and the schedule was chosen for the token model.** The
+   metadata correction — worth more than any contrast in the study — is direct
+   evidence M0 was not near its ceiling. A learning-rate and width search for M0
+   alone is the single control most likely to move +0.0149 again.
+9. **No external baseline, and the endpoint is a proxy.** Every arm here is ours, and
    whether the gain propagates to top-*k* structure retrieval is not shown.
-9. **The generality of the covariate confound is not established.** We show that
+10. **The generality of the covariate confound is not established.** We show that
    *our* binned baseline was denied metadata the peak-set arms received. Whether
    published binned comparators share the defect is the question that decides
    whether this is a finding about the field or about one codebase, and it is

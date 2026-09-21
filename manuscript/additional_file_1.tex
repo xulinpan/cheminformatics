@@ -13,7 +13,8 @@
 \renewcommand{\thefigure}{S\arabic{figure}}
 
 \title{\vspace{-2em}\bfseries Additional file 1\\[4pt]
-\large The encoder, not the bins: decomposing peak-level MS/MS gains}
+\large A metadata-matched binned baseline halves the apparent peak-level\\
+ advantage in MS/MS substructure prediction}
 \author{Xulin Pan \quad Chuanming Wang}
 \date{}
 
@@ -94,6 +95,17 @@ and we note it as a consistency check rather than a result.
 
 \section*{S2\quad Per-seed effect sizes and ordering checks}
 
+\emph{Labels.} The tables below use the short names \emph{interface}, \emph{attention}
+and \emph{encoder} for $\mathrm{M1D}-\mathrm{M0}$, $\mathrm{M1R}-\mathrm{M1D}$ and
+$\mathrm{M1R}-\mathrm{M0}$, which are the keys under which the analysis scripts emit
+them. The main text calls the same three contrasts the \emph{binned token-encoder
+package}, the \emph{attention-bearing versus attention-free comparison} and the
+\emph{rounded token-encoder package}, because none of the three changes only the
+component its short name suggests: the arms either side of each also differ in
+pooling, in feed-forward width, or in how the acquisition covariates are injected.
+The main text's names are the accurate ones. The short names are retained here so
+that the tables match the column keys in \texttt{results/}.
+
 Each effect is the difference between two arms trained under the \emph{same} seed,
 so the three values per row are matched rather than independent samples
 (Table~\ref{tab:s2}). Where the main text claims an ordering between two effects, it
@@ -160,8 +172,9 @@ Table~\ref{tab:s4} summarises them.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.66\linewidth]{figures/figS1_bootstrap_distributions.pdf}
-\caption{Bootstrap distributions on each corpus. The open panel shows the encoder
-split into its two components: the interface distribution sits far from the others
+\caption{Bootstrap distributions on each corpus. The open panel shows the
+$\mathrm{M1R}-\mathrm{M0}$ contrast split into its two parts: the
+$\mathrm{M1D}-\mathrm{M0}$ distribution sits far from the others
 while the attention distribution is centred on zero. On the single-library corpus,
 which has no attention arm, the composite encoder effect is shown instead. The
 encoder and mass-axis distributions overlap heavily there, and the mass-axis and
@@ -206,13 +219,17 @@ right analysis for a larger replicate count.
 
 \hd{The attention arm}
 M1D removes self-attention from every block while holding the mass axis, the peak
-tokens and the acquisition conditioning fixed, so that $\mathrm{M1D}-\mathrm{M0}$
-prices the interface and $\mathrm{M1R}-\mathrm{M1D}$ prices attention. Removing
-attention frees $66{,}048$ weights per block; the feed-forward is widened to $548$
-units in this arm alone so that the control is not also the smaller model
-($714{,}528$ parameters against $712{,}336$). The attention effect is the only one
-in this work whose interval includes zero, and it is also the only one positive in
-fewer than three seeds of three.
+tokens and the acquisition conditioning fixed. Two further things change with it.
+A learned pooling token cannot aggregate position-wise tokens once attention is
+gone, so M1D pools by a masked mean; and removing attention frees $66{,}048$ weights
+per block, so the feed-forward is widened to $548$ units in this arm alone to keep
+the arm from also being the smaller model ($714{,}528$ parameters against
+$712{,}336$). $\mathrm{M1R}-\mathrm{M1D}$ therefore compares two configurations
+rather than pricing attention on its own, and the main text reports it as such. An
+exact ablation holding pooling and feed-forward width fixed on both sides is the
+experiment that would price attention, and it has not been run. What can be said
+from these runs is that this contrast is the only one in the study whose interval
+includes zero, and the only one positive in fewer than three seeds of three.
 
 \section*{S4\quad Per-target average precision}
 
