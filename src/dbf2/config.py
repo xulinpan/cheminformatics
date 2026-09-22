@@ -92,6 +92,11 @@ class ModelConfig:
     lambda_min: float = 2e-3                 # shortest wavelength, Da (resolves mass defect)
     lambda_max: float = 1e3
     # binned-encoder settings, used only when encoder == "binned"
+    # Hidden width of the binned MLP. None keeps the historical 2 * d_model. This
+    # exists so that M0's capacity can be tuned without changing d_model, which
+    # would also change the representation width handed to the aggregator and make
+    # the tuned baseline differ from the untuned one in more than one respect.
+    binned_hidden: Optional[int] = None
     bin_width: float = 0.5
     bin_max_mz: float = 1024.0
     # Rounding control (rung M1R). When > 0, every peak m/z is snapped to the
@@ -145,6 +150,7 @@ class TrainConfig:
     count_weight: float = 0.3
     seed: int = 2026
     limit_molecules: Optional[int] = None    # cap each split; for smoke tests
+    skip_test: bool = False                  # selection runs: report validation only
 
 
 @dataclass

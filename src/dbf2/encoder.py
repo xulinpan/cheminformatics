@@ -226,9 +226,10 @@ class BinnedEncoder(nn.Module):
         self.cfg = cfg
         self.n_bins = int(cfg.bin_max_mz / cfg.bin_width)
         d_in = 2 * self.n_bins + cfg.d_cov
+        d_hidden = cfg.binned_hidden or cfg.d_model * 2
         self.net = nn.Sequential(
-            nn.Linear(d_in, cfg.d_model * 2), nn.GELU(),
-            nn.Dropout(cfg.dropout), nn.Linear(cfg.d_model * 2, cfg.d_model))
+            nn.Linear(d_in, d_hidden), nn.GELU(),
+            nn.Dropout(cfg.dropout), nn.Linear(d_hidden, cfg.d_model))
         self.out_dim = cfg.d_model
 
     def forward(self, mz, intensity, precursor, peak_mask, cov):

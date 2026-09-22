@@ -59,6 +59,15 @@ def _apply_overrides(cfg, a) -> None:
         # sweep the mass axis: 0 restores full precision, any positive width
         # snaps peaks to that grid and merges the collisions
         cfg.model.quantise_mz = a.quantise
+    # knobs for the prespecified M0-only tuning search
+    if getattr(a, "lr", None) is not None: cfg.train.lr = a.lr
+    if getattr(a, "dropout", None) is not None: cfg.model.dropout = a.dropout
+    if getattr(a, "hidden", None) is not None: cfg.model.binned_hidden = a.hidden
+    if getattr(a, "no_test", False):
+        # Selection must not see the held-out fold. With this set the run reports
+        # validation only, so a hyperparameter search cannot consult fold 0 even
+        # by accident.
+        cfg.train.skip_test = True
 
 
 def cmd_train(a) -> None:
@@ -154,6 +163,14 @@ def main() -> None:
     p.add_argument("--quantise", type=float, default=None,
                    help="snap peak m/z to this grid in Da and merge collisions; "
                         "0 keeps full precision. Sweep it to price precision.")
+    p.add_argument("--lr", type=float, default=None,
+                   help="override the peak learning rate")
+    p.add_argument("--dropout", type=float, default=None)
+    p.add_argument("--hidden", type=int, default=None,
+                   help="hidden width of the binned MLP; M0 only")
+    p.add_argument("--no-test", action="store_true",
+                   help="evaluate on validation only, leaving the held-out fold "
+                        "untouched; use for hyperparameter selection")
 
     p = sub.add_parser("bayes", parents=[common]); p.set_defaults(fn=cmd_bayes)
     p.add_argument("--run", type=Path, required=True)

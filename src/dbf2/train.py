@@ -212,7 +212,8 @@ def train(cfg: Config, out_dir: Path, tag: str = "run") -> dict:
     report = {"tag": tag, "best_epoch": ck["epoch"], "best_val_macro_auprc": best,
               "n_parameters": n_par, "pooling": cfg.model.pooling,
               "encoder": cfg.model.encoder}
-    for split in ("val", "test", "oracle"):
+    splits = ("val",) if getattr(cfg.train, "skip_test", False) else ("val", "test", "oracle")
+    for split in splits:
         if split not in loaders:
             continue
         pr = predict(model, loaders[split], device, cfg.train.amp)

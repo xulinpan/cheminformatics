@@ -1,0 +1,198 @@
+{
+  "grid": {
+    "lr": [
+      0.0003,
+      0.001,
+      0.003
+    ],
+    "hidden": [
+      256,
+      512,
+      1024
+    ],
+    "dropout": [
+      0.1,
+      0.3
+    ]
+  },
+  "selection_metric": "fold-1 macro AUPRC",
+  "held_out_fold_consulted": false,
+  "results": [
+    {
+      "lr": 0.003,
+      "hidden": 1024,
+      "dropout": 0.3,
+      "tag": "M0tune_lr0.003_h1024_d0.3",
+      "val_macro_auprc": 0.2932938547503322,
+      "n_parameters": 4442128
+    },
+    {
+      "lr": 0.003,
+      "hidden": 1024,
+      "dropout": 0.1,
+      "tag": "M0tune_lr0.003_h1024_d0.1",
+      "val_macro_auprc": 0.28142617604876746,
+      "n_parameters": 4442128
+    },
+    {
+      "lr": 0.003,
+      "hidden": 512,
+      "dropout": 0.3,
+      "tag": "M0tune_lr0.003_h512_d0.3",
+      "val_macro_auprc": 0.28019168848327475,
+      "n_parameters": 2262544
+    },
+    {
+      "lr": 0.003,
+      "hidden": 512,
+      "dropout": 0.1,
+      "tag": "M0tune_lr0.003_h512_d0.1",
+      "val_macro_auprc": 0.2724044147971784,
+      "n_parameters": 2262544
+    },
+    {
+      "lr": 0.003,
+      "hidden": 256,
+      "dropout": 0.3,
+      "tag": "M0tune_lr0.003_h256_d0.3",
+      "val_macro_auprc": 0.2510968857250251,
+      "n_parameters": 1172752
+    },
+    {
+      "lr": 0.003,
+      "hidden": 256,
+      "dropout": 0.1,
+      "tag": "M0tune_lr0.003_h256_d0.1",
+      "val_macro_auprc": 0.24627268650622866,
+      "n_parameters": 1172752
+    },
+    {
+      "lr": 0.001,
+      "hidden": 1024,
+      "dropout": 0.1,
+      "tag": "M0tune_lr0.001_h1024_d0.1",
+      "val_macro_auprc": 0.21938055935573447,
+      "n_parameters": 4442128
+    },
+    {
+      "lr": 0.001,
+      "hidden": 1024,
+      "dropout": 0.3,
+      "tag": "M0tune_lr0.001_h1024_d0.3",
+      "val_macro_auprc": 0.21258962918787364,
+      "n_parameters": 4442128
+    },
+    {
+      "lr": 0.001,
+      "hidden": 512,
+      "dropout": 0.1,
+      "tag": "M0tune_lr0.001_h512_d0.1",
+      "val_macro_auprc": 0.19942591383909994,
+      "n_parameters": 2262544
+    },
+    {
+      "lr": 0.001,
+      "hidden": 512,
+      "dropout": 0.3,
+      "tag": "M0tune_lr0.001_h512_d0.3",
+      "val_macro_auprc": 0.19118757190669264,
+      "n_parameters": 2262544
+    },
+    {
+      "lr": 0.001,
+      "hidden": 256,
+      "dropout": 0.1,
+      "tag": "M0tune_lr0.001_h256_d0.1",
+      "val_macro_auprc": 0.1702297366117169,
+      "n_parameters": 1172752
+    },
+    {
+      "lr": 0.001,
+      "hidden": 256,
+      "dropout": 0.3,
+      "tag": "M0tune_lr0.001_h256_d0.3",
+      "val_macro_auprc": 0.1648818216754802,
+      "n_parameters": 1172752
+    },
+    {
+      "lr": 0.0003,
+      "hidden": 1024,
+      "dropout": 0.1,
+      "tag": "M0tune_lr0.0003_h1024_d0.1",
+      "val_macro_auprc": 0.11739082472328025,
+      "n_parameters": 4442128
+    },
+    {
+      "lr": 0.0003,
+      "hidden": 1024,
+      "dropout": 0.3,
+      "tag": "M0tune_lr0.0003_h1024_d0.3",
+      "val_macro_auprc": 0.11220719308180406,
+      "n_parameters": 4442128
+    },
+    {
+      "lr": 0.0003,
+      "hidden": 512,
+      "dropout": 0.1,
+      "tag": "M0tune_lr0.0003_h512_d0.1",
+      "val_macro_auprc": 0.1045347365223279,
+      "n_parameters": 2262544
+    },
+    {
+      "lr": 0.0003,
+      "hidden": 512,
+      "dropout": 0.3,
+      "tag": "M0tune_lr0.0003_h512_d0.3",
+      "val_macro_auprc": 0.0995982582452643,
+      "n_parameters": 2262544
+    },
+    {
+      "lr": 0.0003,
+      "hidden": 256,
+      "dropout": 0.1,
+      "tag": "M0tune_lr0.0003_h256_d0.1",
+      "val_macro_auprc": 0.08670898311316094,
+      "n_parameters": 1172752
+    },
+    {
+      "lr": 0.0003,
+      "hidden": 256,
+      "dropout": 0.3,
+      "tag": "M0tune_lr0.0003_h256_d0.3",
+      "val_macro_auprc": 0.08374785322648022,
+      "n_parameters": 1172752
+    }
+  ],
+  "selected": {
+    "lr": 0.003,
+    "hidden": 1024,
+    "dropout": 0.3,
+    "tag": "M0tune_lr0.003_h1024_d0.3",
+    "val_macro_auprc": 0.2932938547503322,
+    "n_parameters": 4442128
+  },
+  "final": {
+    "runs": [
+      {
+        "seed": 2026,
+        "tag": "M0T",
+        "macro_auprc": 0.2607318656342454,
+        "n_parameters": 4442128
+      },
+      {
+        "seed": 7,
+        "tag": "M0T_s7",
+        "macro_auprc": 0.26030128611202463,
+        "n_parameters": 4442128
+      },
+      {
+        "seed": 13,
+        "tag": "M0T_s13",
+        "macro_auprc": 0.25917557458480023,
+        "n_parameters": 4442128
+      }
+    ],
+    "mean": 0.2600695754436901,
+    "sd": 0.0008036030319820916
+  }
+}
