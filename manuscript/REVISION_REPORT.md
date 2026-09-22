@@ -61,7 +61,7 @@ appears only on the former.
 | Issue | Current problem | Revision performed | New experiment required? | Location |
 |---|---|---|---|---|
 | **A. Dense baseline strength** | M0 inherited the token model's schedule; no tuning. Fatal exposure for a paper about comparator fairness | Asymmetry stated explicitly; prespecified M0-only grid (LR ×3, width ×3, dropout ×2), split fixed, selection on fold 1, single fold-0 evaluation; instruction to recompute all M0-involving contrasts if the decomposition moves | **Yes** — `[REQUIRES NEW EXPERIMENT: tuned M0]` | Methods "Hyperparameter selection, and a known asymmetry"; Limitations; Discussion |
-| **B. Uncertainty quantification** | Single bootstrap over targets, implicitly treated as the interval | Retained and rescoped; scaffold-cluster bootstrap designed, implemented and its estimator verified against all seven point estimates; Methods subsection separating the three sources | **Yes** — production run outstanding, `[REQUIRES NEW ANALYSIS: scaffold-cluster bootstrap]` | Methods "Evaluation and three sources of uncertainty"; Results §"Test-set uncertainty" |
+| **B. Uncertainty quantification** | Single bootstrap over targets, implicitly treated as the interval | Retained and rescoped; scaffold-cluster bootstrap run (2,000 draws, 3,784 clusters), estimator verified against all seven point estimates, results in Table 5 with the bootstrap mean shown beside each point estimate; Methods subsection separating the three sources | No — complete | Methods "Evaluation and three sources of uncertainty"; Results §"Test-set uncertainty", Table 5 |
 | **C. M2 formalisation** | Largest one-factor effect described only verbally | Full equations transcribed from the implementation, including two-level aggregation, softplus+floor positivity, normalised weights, additive sufficient statistics, joint training | No | Methods "Multi-spectrum aggregation in M2", Eqs. (2)–(8) |
 | **D. Attention ablation** | M1R−M1D presented with attention prominence despite three simultaneous differences | Renamed throughout; removed from Conclusion emphasis; exact ablation specified (identical pooling, width, protocol; operator toggled) | **Yes** — `[REQUIRES NEW EXPERIMENT: exact attention ablation]` | Methods "An exact attention ablation"; Results §4; Abstract |
 | **E. Provenance / reproducibility** | "should ultimately be achieved" — prospective | Rewritten into five concrete subsections: code, environment, primary corpus, filtering and identity, artefacts, sensitivity corpus; per-record licence filtering noted for all three source libraries | **Yes** — `[REQUIRES REPOSITORY ARCHIVE / DOI]` | Availability of data and materials |
@@ -79,7 +79,7 @@ appears only on the former.
 
 ## 3. Analyses still required before submission
 
-Only three. Everything else in the manuscript is complete and its numbers are
+Three. Everything else in the manuscript is complete and its numbers are
 reported.
 
 **1. Tuned M0 baseline** — `[REQUIRES NEW EXPERIMENT: tuned M0]`
@@ -98,32 +98,12 @@ toggled. Note the attention-bearing arm must use masked-mean peak pooling for th
 not a learned token. Until it is run, no statement in the paper prices attention.
 Six training runs.
 
-**3. Scaffold-cluster bootstrap, production run** — `[REQUIRES NEW ANALYSIS: scaffold-cluster bootstrap]`
-Implemented in `scripts/scaffold_cluster_bootstrap.py` and **estimator verified**,
-but the 2,000-draw run is not complete and no interval from it is reported.
-
-A first attempt produced intervals that were quietly wrong, and the reason is worth
-recording because it is easy to repeat. The reported contrasts average each
-target's average precision *across seeds* and then difference. Averaging the three
-seeds' *probabilities* first and computing one AP is a different quantity — a
-three-seed ensemble, which is a better model than any single seed and improves the
-arms unevenly. That error alone moved M1R−M0 from the reported +0.0149 to +0.0327
-before any resampling took place. A second, smaller error admitted targets with
-fewer than five positives in a resample, whose APs are extremely high variance and
-do not cancel between arms.
-
-Both are fixed. The script now computes AP per seed inside every draw, averages per
-target, and applies the same ≥5-positive rule as the reported metric; a centring
-check runs automatically and warns if the bootstrap mean departs from the point
-estimate. At low draw count it reproduces all seven point estimates exactly. Cost
-is roughly three hours for 2,000 draws:
-
-    python scripts/scaffold_cluster_bootstrap.py --root . --dataset open --draws 2000
-
-**4. Repository archive and DOI** — `[REQUIRES REPOSITORY ARCHIVE / DOI]`
+**3. Repository archive and DOI** — `[REQUIRES REPOSITORY ARCHIVE / DOI]`
 A tagged GitHub release archived to Zenodo, with the DOI inserted in Availability
 of data and materials and in `CITATION.cff`. Procedure documented in
 `docs/releasing.md`.
+
+
 
 ### Completed during this revision (no longer outstanding)
 
@@ -131,8 +111,26 @@ of data and materials and in `CITATION.cff`. Procedure documented in
   Primary: 0 of 50,287 identifiers and 0 of 19,648 scaffold groups span folds;
   all 372,200 spectra inherit their structure's fold. Sensitivity corpus:
   0 of 43,536 and 0 of 13,620. `scripts/split_integrity_audit.py`.
-- **Scaffold-cluster bootstrap estimator.** Implemented and verified to reproduce
-  every reported point estimate; the production run remains outstanding (item 3).
+- **Scaffold-cluster bootstrap.** Complete: 2,000 draws over 3,784 scaffold
+  clusters, reported in Table 5. The estimator was verified first — it reproduces
+  all seven point estimates exactly.
+
+  A first attempt produced intervals that were quietly wrong, and the reason is
+  worth recording because it is easy to repeat. The reported contrasts average each
+  target's average precision *across seeds* and then difference. Averaging the three
+  seeds' *probabilities* first and computing one AP is a different quantity — a
+  three-seed ensemble, a better model than any single seed, which improves the arms
+  unevenly. That alone moved M1R−M0 from +0.0149 to +0.0327 before any resampling.
+  A second, smaller error admitted targets with fewer than five positives in a
+  resample. Both are fixed, and a centring check now runs automatically.
+
+  The finished run shows the two single-factor interventions centring to within
+  0.0009 and 0.0004 of their point estimates, and every composite contrast biased
+  upward by +0.0026 to +0.0073 — more the more components it bundles. This is
+  reported in the manuscript rather than smoothed over: resampling with replacement
+  duplicates structures, which sharpens macro AUPRC, and that sharpening cancels
+  between arms that rank similarly but not between a dense perceptron and a
+  Transformer.
 
 ### Derivable from saved predictions, not yet run
 
@@ -185,6 +183,5 @@ of data and materials and in `CITATION.cff`. Procedure documented in
 **Outstanding before submission**
 - [ ] Tuned M0 experiment run and all M0-involving contrasts updated
 - [ ] Exact attention ablation run, or its marker and the associated text removed
-- [ ] Scaffold-cluster bootstrap production run (2,000 draws, ~3 h) and its table inserted
 - [ ] Zenodo DOI minted and inserted
-- [ ] All four red `[REQUIRES …]` markers resolved and the `xcolor` macros removed
+- [ ] All three red `[REQUIRES …]` markers resolved and the `xcolor` macros removed

@@ -328,16 +328,55 @@ Full precision & endpoint (M1) & 0.1119 & 100\%\\
 \hd{Test-set uncertainty over held-out structures}
 The target-resampling intervals above hold the held-out set fixed. The scaffold-cluster bootstrap resamples it: $2{,}000$ draws over the $3{,}784$ scaffold clusters partitioning the $10{,}058$ held-out structures, recomputing macro AUPRC per arm and forming the contrasts within each draw.
 
-\todoana{scaffold-cluster bootstrap}
-The analysis is implemented and its estimator verified: run at low draw count it
-reproduces all seven reported point estimates exactly ($+0.0172$, $-0.0023$,
-$+0.0149$, $+0.0142$, $+0.0179$, $+0.0291$, $+0.0470$), which is the check that the
-resample estimates the same quantity as the reported metric. The production run at
-$2{,}000$ draws has not yet been completed, and no interval from it is reported
-here. Two properties are already visible at low draw count and will be stated with
-the final intervals: the one-factor contrasts centre on their point estimates to
-within $0.0005$, whereas the composite contrasts show a small upward bootstrap
-bias, which is itself consistent with their dependence on more components.
+Table~\ref{tab:scaffold} gives the result. The estimator was verified before use:
+run against the full held-out set it reproduces all seven reported point estimates
+exactly, which is the check that the resample estimates the same quantity as the
+reported metric.
+
+\begin{table}[ht]
+\centering
+\caption{Scaffold-cluster bootstrap on the primary corpus: $2{,}000$ draws over the
+$3{,}784$ scaffold clusters partitioning the $10{,}058$ held-out structures, with
+macro AUPRC recomputed per arm and contrasts formed within each draw. The bootstrap
+mean is shown beside the point estimate so that centring can be judged directly.
+The two single-factor interventions centre to within $0.0009$; the composite
+contrasts carry an upward bias of $+0.0026$ to $+0.0073$, and their intervals
+should be read as locating a range rather than as centred on the estimate.}
+\label{tab:scaffold}
+\small
+\begin{tabular}{llrrrr}
+\toprule
+Contrast & Kind & Point estimate & Bootstrap mean & SD & 95\% interval\\
+\midrule
+M1D $-$ M0 & composite & +0.0172 & +0.0198 & 0.0057 & [+0.0123, +0.0317]\\
+M1R $-$ M1D & composite & $-$0.0023 & +0.0011 & 0.0048 & [$-$0.0051, +0.0105]\\
+M1R $-$ M0 & composite & +0.0149 & +0.0209 & 0.0096 & [+0.0089, +0.0377]\\
+M1 $-$ M1R & one-factor & +0.0142 & +0.0151 & 0.0028 & [+0.0108, +0.0216]\\
+M2 $-$ M1 & one-factor & +0.0179 & +0.0183 & 0.0026 & [+0.0142, +0.0242]\\
+M1 $-$ M0 & composite & +0.0291 & +0.0360 & 0.0116 & [+0.0213, +0.0557]\\
+M2 $-$ M0 & composite & +0.0470 & +0.0543 & 0.0133 & [+0.0370, +0.0765]\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two features of this table bear on how the paper's claims should be read. First,
+the mass-axis intervention and the aggregation intervention are well behaved under
+resampling of structures: their bootstrap means sit within $0.0009$ and $0.0004$ of
+their point estimates, their standard deviations are the smallest in the table, and
+their intervals exclude zero comfortably. Second, every composite contrast is
+biased upward, by more the more components it bundles --- $+0.0026$ for
+M1D~$-$~M0, $+0.0060$ for M1R~$-$~M0 and $+0.0073$ for M2~$-$~M0. Resampling with
+replacement duplicates structures, which sharpens macro AUPRC, and that sharpening
+cancels between arms that rank similarly and does not cancel between a dense
+perceptron and a Transformer. The composite contrasts are therefore less stable
+under this resampling than the single-factor ones, which is consistent with the
+reading given to them throughout.
+
+The one interval that changes an interpretation is M1R~$-$~M1D. Its
+target-resampling interval, $[-0.0066, +0.0020]$, contains zero; its
+scaffold-cluster interval, $[-0.0051, +0.0105]$, also contains zero but is
+displaced upward. Neither supports a claim in either direction, which is the
+conclusion already drawn in Sect.~4 for independent reasons.
 
 These intervals are wider than the target-resampling intervals, as expected: they carry variability from which structures were held out, which the target bootstrap holds fixed by construction. Neither is a confidence interval for the population of MS/MS tasks. Reported together with the seed standard deviations, they say that the mass-axis intervention is reproducible across all three sources, and that the ordering of the mass-axis and token-encoder-package increments is not.
 
