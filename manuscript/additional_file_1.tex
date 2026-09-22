@@ -26,7 +26,8 @@ the main text, the full bootstrap distributions, and the peak-absorption analysi
 broken down by acquisition condition. Every table here is also provided as a
 machine-readable CSV in the repository under \texttt{results/}, and every number is
 regenerated from saved run artefacts by \texttt{scripts/make\_supplementary.py} and
-\texttt{scripts/make\_si\_figures.py}.
+\texttt{scripts/make\_si\_figures.py}. Section S8 states both controls in full, so
+that the method can be applied without the repository.
 
 \section*{S1\quad Per-arm, per-seed metrics}
 
@@ -305,33 +306,37 @@ $6.5\%$ at $0.01$~Da, and those are the numbers the main text uses.
 
 \section*{S7\quad Reproduction}
 
-Software: Python 3.10, PyTorch 2.11.0+cu128, RDKit 2026.03.6, NumPy 2.4.4, pandas
-2.3.3, pyarrow 24.0.0. Exact pins are in \texttt{requirements.txt}.
+Software: Python 3.14, PyTorch 2.11.0+cu128, RDKit 2026.3.6, NumPy 2.4.4, pandas
+2.3.3, pyarrow 24.0.0, on a single NVIDIA RTX 3070. Exact pins for every
+dependency are in \texttt{requirements-lock.txt}.
 
 The full path from the corpus file to every number in this file is
 \begin{verbatim}
 python scripts/make_open_subset.py --root .
 python -m dbf2 prepare --root . --dataset open
 python -m dbf2 ablate  --root . --dataset open \
-    --rungs M0 M1R M1 M2 --epochs 15
+    --rungs M0 M1D M1R M1 M2 --epochs 15
 python -m dbf2 ablate  --root . --dataset open \
-    --rungs M0 M1R M1 M2 --epochs 15 --seed 7
+    --rungs M0 M1D M1R M1 M2 --epochs 15 --seed 7
 python -m dbf2 ablate  --root . --dataset open \
-    --rungs M0 M1R M1 M2 --epochs 15 --seed 13
+    --rungs M0 M1D M1R M1 M2 --epochs 15 --seed 13
 python scripts/make_supplementary.py
 python scripts/make_si_figures.py
 \end{verbatim}
-with the same three commands minus \texttt{--dataset open} for the single-library
-corpus, and
+with the same three commands minus \texttt{--dataset open} and minus \texttt{M1D}
+for the single-library corpus, which carries four arms, and
 \begin{verbatim}
 for w in 0.25 0.1 0.05 0.01; do
   python -m dbf2 train --root . --rung M1 \
       --quantise $w --tag W$w --epochs 15
 done
 \end{verbatim}
-for the sweep. \texttt{python -m pytest src/dbf2/tests} runs $50$ unit tests, $14$
-of which cover the rounding control, including that M1R and M1 have identical
-parameter counts and that their configurations differ in exactly one field.
+for the sweep. \texttt{python -m pytest src/dbf2/tests} runs $71$ unit tests, of
+which $14$ cover the rounding control --- including that M1R and M1 have identical
+parameter counts and that their configurations differ in exactly one field --- and
+five check that every arm responds to its acquisition covariates, the regression
+described in S1. \texttt{pytest packages/msms-controls} runs a further $23$ against
+the released library. Neither suite requires the corpus.
 
 \hd{A note on what the subset builder reads}
 \texttt{make\_open\_subset.py} selects the GNPS, MassBank and MoNA rows out of the
@@ -340,5 +345,75 @@ reproducing this work as written still requires that aggregated file. Fetching t
 records from GNPS, MassBank and MoNA directly is recorded as an open item in the
 repository. \texttt{docs/corpus\_composition.md} reports each source library's
 contribution and states which parts are redistributable.
+
+\section*{S8\quad The two controls in full}
+
+Both controls are released as \texttt{msms-controls}, a NumPy-only library under
+the MIT licence. They are short enough to state here as well, so that the method
+does not depend on a repository still resolving. Neither is specific to this
+model, this corpus or this deep-learning framework.
+
+\hd{The rounding control}
+Given one spectrum's peaks $(m_k, I_k)$, its precursor $m^{\mathrm{prec}}$, and the
+grid width $w$ used by the binned baseline:
+
+\begin{verbatim}
+  # 1. assign peaks to the baseline's cells, and move each to its centre
+  c_k    = floor(m_k / w)
+  m_out  = (unique(c_k) + 0.5) * w
+
+  # 2. merge the peaks that now share a cell, using the accumulator the
+  #    baseline uses. For a sqrt-intensity binned vector that is
+  I_out[c] = ( sum of sqrt(I_k) over peaks k with c_k = c ) ** 2
+
+  # 3. snap the precursor to the SAME grid
+  m_prec_out = (floor(m_prec / w) + 0.5) * w
+\end{verbatim}
+
+The resulting peaks pass through the unmodified peak-set encoder. No peak is added
+or removed; only the mass axis is degraded and colliding peaks are combined.
+
+Step 3 is the one that is easy to omit and costly to omit. Most peak encoders
+derive a neutral loss as $m^{\mathrm{prec}} - m_k$. If the peaks are quantised
+while the precursor keeps full precision, that subtraction returns the precursor's
+mass defect to every token, and the arm intended to carry only binned mass
+information silently regains a full-precision channel. The control then
+understates the value of the mass axis, and nothing in the training curves
+reveals it. A unit test asserts that two precursors falling in one cell give
+identical embeddings under the control and different embeddings without it.
+
+Step 2 must match the baseline, not merely be reasonable. Accumulating raw
+intensity where the baseline accumulates its square root changes the intensity
+scale as well as the mass axis, which reintroduces exactly the kind of two-factor
+comparison the control exists to remove.
+
+\hd{The conditioning-parity check}
+Given the arms of the ablation, one fixed spectrum, and two settings $c_1, c_2$ of
+the acquisition covariates:
+
+\begin{verbatim}
+  for each arm a:
+      y1 = predict(a, spectrum, covariates = c1)
+      y2 = predict(a, spectrum, covariates = c2)
+      response[a] = max |y1 - y2|
+
+  fail, naming every offender, if any response[a] <= tol
+\end{verbatim}
+
+Choose $c_1$ and $c_2$ to differ substantially --- a low against a high collision
+energy, two adducts, two instruments --- since an arm may legitimately be nearly
+invariant to a small change. An arm whose response is zero is not a weaker model
+but a different experiment: every contrast measured against it also prices the
+information it could not see. That is the failure reported in S1, and it cost half
+of what a two-arm comparison here would have attributed to the spectral
+representation.
+
+One caveat makes the difference between a real check and a vacuous one. FiLM and
+adaptive layer normalisation are commonly initialised so that the modulation is
+the identity at step 0, which makes an untrained model return exactly zero for
+every arm whether or not the conditioning is wired correctly. Perturb the
+conditioning parameters off their initialisation before testing, or test a trained
+checkpoint.
+
 
 \end{document}
