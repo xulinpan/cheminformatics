@@ -64,29 +64,40 @@ ax.legend(frameon=False, fontsize=7.8, loc="upper left")
 save(fig, "figure1_arm_means")
 
 # ---------------------------------------------------------------- figure 2
+# Kind is encoded by marker shape as well as colour, so the distinction between a
+# single-factor intervention and a composite contrast survives greyscale printing
+# and colour-vision deficiency. Labels sit left of each interval rather than at the
+# right-hand end, where they previously collided with the widest intervals.
 ROWS = [("M1D-M0", "M1D $-$ M0", "binned token-encoder package", True),
         ("M1R-M1D", "M1R $-$ M1D", "attention-bearing vs attention-free", True),
         ("M1R-M0", "M1R $-$ M0", "rounded token-encoder package", True),
         ("M1-M1R", "M1 $-$ M1R", "mass-axis precision", False),
-        ("M2-M1", "M2 $-$ M1", "hierarchical aggregation", False)]
+        ("M2-M1", "M2 $-$ M1", "multi-spectrum aggregation", False)]
 
-fig, ax = plt.subplots(figsize=(7.0, 3.2))
+fig, ax = plt.subplots(figsize=(7.4, 3.4))
 for i, (key, name, interp, composite) in enumerate(ROWS):
     y = len(ROWS) - 1 - i
     p = OPEN["paired"][key]
     colour = GREY if composite else BLUE
-    ax.plot([p["lo"], p["hi"]], [y, y], "-", color=colour, lw=1.6)
-    ax.plot([p["mean"]], [y], "o", ms=6, color=colour)
-    ax.annotate(f"{p['mean']:+.4f}", (p["hi"], y), textcoords="offset points",
-                xytext=(7, -3), fontsize=8, color=colour)
-ax.axvline(0, ls="--", lw=1, color=RED)
+    marker = "s" if composite else "o"
+    ax.plot([p["lo"], p["hi"]], [y, y], "-", color=colour, lw=1.6, zorder=2)
+    for x in (p["lo"], p["hi"]):                      # interval caps aid reading
+        ax.plot([x, x], [y - 0.12, y + 0.12], "-", color=colour, lw=1.2, zorder=2)
+    ax.plot([p["mean"]], [y], marker, ms=7 if composite else 7.5, color=colour,
+            zorder=3, markeredgecolor="white", markeredgewidth=0.8)
+    ax.annotate(f"{p['mean']:+.4f}", (p["mean"], y), textcoords="offset points",
+                xytext=(0, 9), ha="center", fontsize=8, color=colour)
+ax.axvline(0, ls="--", lw=1, color=RED, zorder=1)
 ax.set_yticks(range(len(ROWS)))
 ax.set_yticklabels([f"{n}\n{i}" for _, n, i, _ in ROWS][::-1], fontsize=7.8)
-ax.set_xlabel("change in macro AUPRC (paired over targets)")
-ax.set_xlim(-0.009, 0.030)
-ax.plot([], [], "-o", color=BLUE, ms=5, label="one-factor intervention")
-ax.plot([], [], "-o", color=GREY, ms=5, label="composite contrast")
-ax.legend(frameon=False, fontsize=7.8, loc="lower right")
+ax.set_xlabel("change in macro AUPRC (paired over targets, 95% target-resampling interval)")
+ax.set_xlim(-0.010, 0.030)
+ax.set_ylim(-0.6, len(ROWS) - 0.25)
+ax.plot([], [], "o", color=BLUE, ms=7, markeredgecolor="white",
+        label="one-factor intervention")
+ax.plot([], [], "s", color=GREY, ms=7, markeredgecolor="white",
+        label="composite contrast")
+ax.legend(frameon=False, fontsize=8, loc="lower right")
 save(fig, "figure2_contrasts")
 
 # ---------------------------------------------------------------- figure 3

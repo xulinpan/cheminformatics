@@ -203,6 +203,10 @@ class Config:
     DATASETS = {
         "default": ("train.parquet", "dbf2_prepared", "dbf2_runs"),
         "open": ("train_open.parquet", "dbf2_prepared_open", "dbf2_runs_open"),
+        # MassSpecGym (Bushuiev et al. 2024), MIT-licensed and obtainable without
+        # an account. Its folds are supplied by the benchmark and carried through
+        # rather than recomputed; see scripts/make_massspecgym_subset.py.
+        "msg": ("train_msg.parquet", "dbf2_prepared_msg", "dbf2_runs_msg"),
     }
 
     @staticmethod

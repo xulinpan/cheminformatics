@@ -24,6 +24,11 @@ from .config import Config
 def cmd_prepare(a) -> None:
     from .prepare import run
     cfg = Config(paths=Config.paths_for(a.dataset, a.root))
+    if a.dataset == "msg":
+        # The oracle recovers the CASMI answer key by matching test spectra against
+        # the training file. MassSpecGym has no competition test set, and its own
+        # held-out fold is not a leak to be recovered, so there is nothing to build.
+        cfg.data.build_oracle = False
     if a.max_peaks is not None:
         cfg.data.max_peaks = a.max_peaks
     if a.max_row_groups:

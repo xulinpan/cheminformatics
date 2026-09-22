@@ -270,10 +270,13 @@ def _structure_table(cfg: Config) -> pd.DataFrame:
     n_rg = f.metadata.num_row_groups
     if cfg.data.limit_row_groups:
         n_rg = min(n_rg, int(cfg.data.limit_row_groups))
+    cols = ["inchikey14", "normalized_smiles", "molecular_formula"]
+    # Optional: a corpus that ships its own structure-level split carries it here.
+    if "provided_fold" in set(f.schema_arrow.names):
+        cols.append("provided_fold")
     parts = []
     for g in range(n_rg):
-        part = f.read_row_group(g, columns=["inchikey14", "normalized_smiles",
-                                            "molecular_formula"]).to_pandas()
+        part = f.read_row_group(g, columns=cols).to_pandas()
         parts.append(part.drop_duplicates("inchikey14"))
     return pd.concat(parts, ignore_index=True).drop_duplicates("inchikey14")
 
@@ -303,6 +306,23 @@ def stage_molecules(cfg: Config, deadline: float) -> bool:
     mol["mono_mass"] = mass
     mol["scaffold"] = scaf
 
+    # A corpus may arrive with folds already assigned. MassSpecGym, for one,
+    # splits by MCES edit distance between structures, which is stricter than
+    # scaffold grouping and is the split its benchmark is defined on; recomputing
+    # our own over it would discard exactly the leakage control we imported it
+    # for. When the source supplies a fold per structure we honour it.
+    if "provided_fold" in raw.columns and raw.provided_fold.notna().any():
+        supplied = raw.set_index("inchikey14").provided_fold
+        mol["fold"] = mol.inchikey14.map(supplied).astype("Int64")
+        if mol.fold.isna().any():
+            missing = int(mol.fold.isna().sum())
+            raise ValueError(
+                f"{missing} structures have no provided fold; a partially supplied "
+                f"split cannot be mixed with a computed one without leaking across "
+                f"the boundary")
+        mol["fold"] = mol.fold.astype(int)
+        return _finish_molecule_table(cfg, mol, man)
+
     # scaffold-grouped folds, greedy balanced
     key = np.where(mol.scaffold.to_numpy() == "", mol.inchikey14.to_numpy(),
                    mol.scaffold.to_numpy())
@@ -314,7 +334,11 @@ def stage_molecules(cfg: Config, deadline: float) -> bool:
     for k, n in sizes.items():
         j = int(load.argmin()); fold_of[k] = j; load[j] += n
     mol["fold"] = [fold_of[k] for k in key]
+    return _finish_molecule_table(cfg, mol, man)
 
+
+def _finish_molecule_table(cfg, mol, man):
+    """Oracle flagging, write-out and manifest, shared by both fold routes."""
     if cfg.data.build_oracle:
         oracle = build_oracle_key(cfg)
         mol["is_oracle"] = mol.inchikey14.isin(set(oracle.inchikey14)).astype(bool)
