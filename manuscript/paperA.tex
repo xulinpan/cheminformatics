@@ -3,6 +3,7 @@
 \usepackage{amsmath,amssymb,amsfonts,mathtools}
 \usepackage{booktabs,array,tabularx}
 \usepackage{graphicx}
+\usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage[protrusion=true,expansion=false]{microtype}
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
@@ -13,18 +14,36 @@
 \setstretch{1.05}
 \setlength{\parskip}{0pt}
 \setlength{\tabcolsep}{4pt}
+\makeatletter
+% \hd headings are unnumbered run-ins, so \label after one has no counter to
+% capture and every \ref to it prints empty. \hdlab fixes the printed number
+% explicitly; it must match the number written in the heading itself.
+\newcommand{\hdlab}[2]{\def\@currentlabel{#1}\label{#2}}
+\makeatother
 \newcommand{\hd}[1]{\medskip\par\noindent\textbf{#1}\par\nobreak\vspace{2pt}\noindent\ignorespaces}
 \newcommand{\mz}{\ensuremath{m/z}}
 \graphicspath{{./}{cheminformatics/manuscript/}{manuscript/}}
 
-% Markers for work that is designed but not yet run. Every one of these must be
-% resolved or removed before submission; none is a placeholder for a number.
-\newcommand{\todoexp}[1]{\textcolor{red}{\textbf{[REQUIRES NEW EXPERIMENT: #1]}}}
-\newcommand{\todoana}[1]{\textcolor{red}{\textbf{[REQUIRES NEW ANALYSIS: #1]}}}
-\newcommand{\todoarchive}{\textcolor{red}{\textbf{[REQUIRES REPOSITORY ARCHIVE / DOI]}}}
+% Editorial markers for work that is designed but not yet run. Each marker is
+% apparatus, not manuscript text: the surrounding prose states the same status in
+% its own words, so \draftnotesfalse removes the marker without removing the
+% disclosure. Every one must be resolved before submission; none stands in for a
+% number.
+\definecolor{ednotecol}{rgb}{0.60,0.09,0.09}
+\newif\ifdraftnotes\draftnotestrue
+\newcommand{\ednotebox}[2]{\ifdraftnotes
+  \par\medskip\noindent\textcolor{ednotecol}{\rule{\linewidth}{0.4pt}}%
+  \par\nobreak\vspace{3pt}\noindent
+  {\small\color{ednotecol}\textsc{#1.}\ #2\par}%
+  \nobreak\vspace{3pt}\noindent\textcolor{ednotecol}{\rule{\linewidth}{0.4pt}}%
+  \par\medskip\fi}
+\newcommand{\todoexp}[1]{\ednotebox{Outstanding experiment}{#1}}
+\newcommand{\todoana}[1]{\ednotebox{Outstanding analysis}{#1}}
+\newcommand{\todoarchive}{\ifdraftnotes\ \textcolor{ednotecol}{\small\textsc{[outstanding:
+deposit the archive and quote its DOI]}}\fi}
 
-\newcommand{\onefactor}{\textsc{one-factor intervention}}
-\newcommand{\composite}{\textsc{composite contrast}}
+\newcommand{\onefactor}{{\normalfont\scshape one-factor intervention}}
+\newcommand{\composite}{{\normalfont\scshape composite contrast}}
 
 \title{\vspace{-2em}\bfseries The apparent advantage of peak-token MS/MS models over
 binned baselines is not robust to how the comparator is built}
@@ -179,14 +198,22 @@ mapped to the knob that carries capacity in that arm --- the feed-forward width 
 the peak-token blocks --- and $d_{\mathrm{model}}$ held at $128$ so that the
 representation width is unchanged and the search varies capacity rather than the
 interface. Learning rate and dropout ranges are identical, selection is on fold 1,
-and fold 0 is not consulted.
+and fold 0 is not consulted. The search is specified here because it is the
+experiment that would settle the comparison of Sect.~\ref{sec:tuned}; at the time
+of writing it has been launched but not completed, and no result from it is reported
+anywhere in this paper.
 
-\todoexp{matched M1R search}
+\todoexp{The matched search over the peak-token arm is specified and running but not
+complete. When it finishes, the tuned-against-tuned comparison it yields replaces the
+tuned-baseline-against-untuned-treatment comparison of Sect.~\ref{sec:tuned}, and
+the reading given there must be re-derived from it.}
 
 \hd{An exact attention ablation}
-For the same reason, the M1D-to-M1R contrast reported below is not the experiment that would price self-attention. That experiment holds the input, the peak-pooling rule, the feed-forward width, the parameter count as closely as the operator allows, and the training protocol fixed on both sides, and toggles only the self-attention operator; in particular the attention-bearing arm must use masked-mean peak pooling rather than a learned token, so that the pooling rule does not change with the operator.
+For the same reason, the M1D-to-M1R contrast reported below is not the experiment that would price self-attention. That experiment holds the input, the peak-pooling rule, the feed-forward width, the parameter count as closely as the operator allows, and the training protocol fixed on both sides, and toggles only the self-attention operator; in particular the attention-bearing arm must use masked-mean peak pooling rather than a learned token, so that the pooling rule does not change with the operator. That experiment has not been run, and no quantity reported in this paper prices self-attention.
 
-\todoexp{exact attention ablation}
+\todoexp{The exact attention ablation described in this paragraph has not been run.
+Until it is, the M1D-to-M1R difference reported below should be read as the effect of
+the whole architectural change, not of the attention operator.}
 
 \hd{Evaluation and three sources of uncertainty}
 Macro AUPRC is reported over targets with at least five held-out positives. Three distinct sources of variability bear on the contrasts, and we report them separately rather than combining them into one interval.
@@ -205,7 +232,7 @@ Each contrast below is labelled \onefactor{} where the arms differ in exactly on
 \hd{1. Metadata matching substantially reduces the apparent two-arm gap}
 The initial dense baseline did not use collision energy, adduct, polarity or instrument variables, whereas the peak-token models did. Adding the same acquisition variables to M0 by concatenating their embedding to the dense spectral vector raises M0 from $0.1130$ to $0.1418$ macro AUPRC, an improvement of $+0.0288$. Consequently the apparent M1-to-M0 advantage falls from $+0.0579$ to $+0.0291$. About half of the original two-arm difference was attributable to unequal metadata availability rather than to mass precision or peak-token modelling.
 
-At this point in the study the metadata correction was the largest single quantity measured, and it already belonged to the construction of the comparator rather than to any modelling choice under test. Section~\ref{sec:tuned} reports a second intervention on the comparator that is four times larger again. Because M0 and the peak-token arms inject the metadata through different mechanisms, we describe the corrected comparator as metadata matched, not as mechanically identical in conditioning. Table~\ref{tab:arms} summarises the five arms under the corrected baseline.
+At this point in the study the metadata correction was the largest single quantity measured, and it already belonged to the construction of the comparator rather than to any modelling choice under test. Sect.~\ref{sec:tuned} reports a second intervention on the comparator that is four times larger again. Because M0 and the peak-token arms inject the metadata through different mechanisms, we describe the corrected comparator as metadata matched, not as mechanically identical in conditioning. Table~\ref{tab:arms} summarises the five arms under the corrected baseline.
 
 Every contrast in Sects.~2--4 below is measured against this metadata-matched but
 \emph{untuned} baseline, which is the comparator a conventional study would use. None
@@ -281,7 +308,7 @@ M1D minus M0 is $+0.0172$ ($+0.0102$ to $+0.0242$), and M1R minus M1D is $-0.002
 We do not read the negative mean as evidence that attention is harmful, and we do not read the result as an attention effect at all: M1D and M1R differ in the attention operator, in peak pooling and in feed-forward width together. The defensible statement is narrow --- the tested attention-bearing configuration was not necessary to reach the rounded-token performance observed here --- and the experiment that would price the operator is specified in Methods and has not been run.
 
 \hd{5. The measurement model contributes an additional gain, only part of which is aggregation (\composite)}
-\label{sec:agg}
+\hdlab{5}{sec:agg}
 Replacing the masked mean over a molecule's spectra with the measurement model of Eqs.~(2)--(8) is worth $+0.0179$ ($+0.0136$ to $+0.0223$; $63.7\%$ of targets).
 
 This is not a pure aggregation effect, and stratifying the held-out set by the
@@ -304,7 +331,7 @@ Eqs.~(7)--(8) do not require, and probably understates what the pooling contribu
 It exceeds the M1R-to-M0 package in all three seeds by $+0.0009$, $+0.0030$ and $+0.0049$, and the mass-axis intervention in all three by $+0.0028$, $+0.0045$ and $+0.0037$; the same direction against the package holds in all three seeds on the sensitivity corpus. With three seeds per corpus we treat this as a consistent empirical ordering in these runs rather than an established general ranking. Its relevance to the paper's argument is that a component with nothing to do with spectral representation produces an effect of the same magnitude as the representation change being studied.
 
 \hd{5b. A tuned comparator removes the advantage entirely}
-\label{sec:tuned}
+\hdlab{5b}{sec:tuned}
 The search prespecified in Methods was run: 18 configurations, fitted on folds 2--4,
 selected on fold 1, fold 0 never consulted. The grid reproduced the incumbent's
 validation score exactly at the incumbent's settings ($0.1702$), and selected
@@ -347,8 +374,11 @@ It is not evidence that binned representations are superior. The tuned baseline
 carries $6.2\times$ M1R's parameters, so the comparison is not capacity matched, and
 the peak-token arms have not been tuned at all. The original design was unfair to
 the baseline; this one is unfair to the treatment, in mirror image. The matched
-search specified in Methods is the experiment that would settle it and it is not yet
-complete \todoexp{matched M1R search}.
+search specified in Methods is the experiment that would settle it, and it is not yet
+complete, so this section reports no result from it.
+
+\todoexp{Result pending from the matched search specified in Methods. The reading
+offered in this section is provisional until that search lands.}
 
 The mechanism is underfitting, not regularisation. The untuned baseline ends training
 at a presence loss of $0.01885$ against the tuned arm's $0.01084$: the tuned model
@@ -586,7 +616,7 @@ X.P. designed the study, implemented the models and controls, performed the expe
 Not applicable.
 
 \section*{Availability of data and materials}
-\emph{Code.} All code, configurations, trained-run reports and analysis scripts are available at \url{https://github.com/xulinpan/cheminformatics} under the MIT licence. The two controls are additionally released as \texttt{msms-controls}, a NumPy-only library under the MIT licence, so that the rounding control and the conditioning-parity check can be applied to other models without installing this project's training stack. Results in this paper correspond to a tagged release of that repository; the archived snapshot and its persistent identifier are \todoarchive.
+\emph{Code.} All code, configurations, trained-run reports and analysis scripts are available at \url{https://github.com/xulinpan/cheminformatics} under the MIT licence. The two controls are additionally released as \texttt{msms-controls}, a NumPy-only library under the MIT licence, so that the rounding control and the conditioning-parity check can be applied to other models without installing this project's training stack. Results in this paper correspond to a tagged release of that repository. A DOI-bearing archive of that release has not yet been deposited, so no persistent identifier is quoted here.\todoarchive
 
 \emph{Environment.} \texttt{requirements-lock.txt} pins every dependency at the versions used for the reported runs (PyTorch 2.11.0+cu128, Python 3.14, NumPy 2.4.4, pandas 2.3.3, RDKit 2026.3.6, pyarrow 24.0.0), and \texttt{pyproject.toml} declares the supported ranges. Continuous integration runs the test suites on Python 3.10--3.13.
 
