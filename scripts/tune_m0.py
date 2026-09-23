@@ -1,4 +1,4 @@
-"""Prespecified M0-only hyperparameter search.
+"""Prespecified per-arm hyperparameter search.
 
 The manuscript's argument is about comparator fairness, so a comparator that is
 merely untuned is a weaker instrument than the argument needs. The shared schedule
@@ -17,8 +17,19 @@ is never evaluated during the search and cannot contaminate it. The winner is th
 retrained under the three seeds used elsewhere in this work and evaluated once on
 fold 0.
 
-    python scripts/tune_m0.py --root . --dataset open            # stage 1, the grid
-    python scripts/tune_m0.py --root . --dataset open --final    # stage 2, the winner
+    python scripts/tune_m0.py --root . --dataset open                     # M0 grid
+    python scripts/tune_m0.py --root . --dataset open --final             # M0 winner
+    python scripts/tune_m0.py --root . --dataset open --rung M1R          # M1R grid
+    python scripts/tune_m0.py --root . --dataset open --rung M1R --final
+
+The width axis maps to whichever knob carries capacity in the arm: the binned
+MLP's hidden layer for M0, the peak-token blocks' feed-forward width for the token
+arms. d_model stays at 128 throughout, so every arm keeps the same representation
+width and the search varies capacity rather than the interface.
+
+Running the same grid on both sides of a contrast is the only way to compare them
+fairly. Tuning one arm and not the other reverses the original unfairness rather
+than removing it.
 
 Only the hidden width varies M0's capacity: d_model stays at 128 so that the
 representation handed to the aggregator is the same size as in the untuned arm, and
@@ -41,13 +52,18 @@ SEEDS = [2026, 7, 13]
 RUNS = {"default": "dbf2_runs", "open": "dbf2_runs_open", "msg": "dbf2_runs_msg"}
 
 
-def tag_for(lr: float, width: int, dropout: float) -> str:
-    return f"M0tune_lr{lr:g}_h{width}_d{dropout:g}"
+def tag_for(rung: str, lr: float, width: int, dropout: float) -> str:
+    return f"{rung}tune_lr{lr:g}_h{width}_d{dropout:g}"
 
 
-def run(root: Path, dataset: str, tag: str, extra: list[str]) -> None:
+def width_flag(rung: str) -> str:
+    """Which knob carries capacity in this arm."""
+    return "--hidden" if rung == "M0" else "--dff"
+
+
+def run(root: Path, dataset: str, rung: str, tag: str, extra: list[str]) -> None:
     cmd = [sys.executable, "-m", "dbf2", "train", "--root", str(root),
-           "--dataset", dataset, "--rung", "M0", "--epochs", "15",
+           "--dataset", dataset, "--rung", rung, "--epochs", "15",
            "--tag", tag] + extra
     print("  " + " ".join(cmd[2:]), flush=True)
     subprocess.run(cmd, check=True, cwd=str(root))
@@ -58,24 +74,26 @@ def main() -> None:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--root", default=".")
     ap.add_argument("--dataset", default="open", choices=sorted(RUNS))
+    ap.add_argument("--rung", default="M0",
+                    choices=["M0", "M1D", "M1R", "M1", "M2"])
     ap.add_argument("--final", action="store_true",
                     help="stage 2: retrain the selected configuration under three "
                          "seeds and evaluate once on the held-out fold")
     a = ap.parse_args()
     root = Path(a.root).resolve()
     runs = root / RUNS[a.dataset]
-    sel_path = runs / "m0_tuning.json"
+    sel_path = runs / f"{a.rung.lower()}_tuning.json"
 
     if not a.final:
         grid = list(itertools.product(LRS, WIDTHS, DROPOUTS))
-        print(f"stage 1: {len(grid)} configurations, validation only\n")
+        print(f"stage 1 [{a.rung}]: {len(grid)} configurations, validation only\n")
         rows = []
         for lr, width, dropout in grid:
-            tag = tag_for(lr, width, dropout)
+            tag = tag_for(a.rung, lr, width, dropout)
             rep = runs / tag / f"{tag}_report.json"
             if not rep.exists():
-                run(root, a.dataset, tag,
-                    ["--lr", str(lr), "--hidden", str(width),
+                run(root, a.dataset, a.rung, tag,
+                    ["--lr", str(lr), width_flag(a.rung), str(width),
                      "--dropout", str(dropout), "--no-test"])
             d = json.loads(rep.read_text())
             if "test" in d:
@@ -105,15 +123,16 @@ def main() -> None:
         return
 
     sel = json.loads(sel_path.read_text())["selected"]
-    print(f"stage 2: lr={sel['lr']:g} hidden={sel['hidden']} "
+    print(f"stage 2 [{a.rung}]: lr={sel['lr']:g} width={sel['hidden']} "
           f"dropout={sel['dropout']:g}, three seeds, evaluated on fold 0\n")
     out = []
     for seed in SEEDS:
-        tag = "M0T" if seed == SEEDS[0] else f"M0T_s{seed}"
+        base = f"{a.rung}T"
+        tag = base if seed == SEEDS[0] else f"{base}_s{seed}"
         rep = runs / tag / f"{tag}_report.json"
         if not rep.exists():
-            run(root, a.dataset, tag,
-                ["--lr", str(sel["lr"]), "--hidden", str(sel["hidden"]),
+            run(root, a.dataset, a.rung, tag,
+                ["--lr", str(sel["lr"]), width_flag(a.rung), str(sel["hidden"]),
                  "--dropout", str(sel["dropout"]), "--seed", str(seed)])
         d = json.loads(rep.read_text())
         out.append({"seed": seed, "tag": tag,
@@ -123,7 +142,7 @@ def main() -> None:
               f"{out[-1]['macro_auprc']:.4f}\n", flush=True)
     import statistics as st
     v = [r["macro_auprc"] for r in out]
-    print(f"\n  tuned M0: {st.mean(v):.4f} +/- {st.stdev(v):.4f}")
+    print(f"\n  tuned {a.rung}: {st.mean(v):.4f} +/- {st.stdev(v):.4f}")
     d = json.loads(sel_path.read_text())
     d["final"] = {"runs": out, "mean": st.mean(v), "sd": st.stdev(v)}
     sel_path.write_text(json.dumps(d, indent=2), encoding="utf-8")

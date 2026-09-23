@@ -63,6 +63,7 @@ def _apply_overrides(cfg, a) -> None:
     if getattr(a, "lr", None) is not None: cfg.train.lr = a.lr
     if getattr(a, "dropout", None) is not None: cfg.model.dropout = a.dropout
     if getattr(a, "hidden", None) is not None: cfg.model.binned_hidden = a.hidden
+    if getattr(a, "dff", None) is not None: cfg.model.d_ff = a.dff
     if getattr(a, "no_test", False):
         # Selection must not see the held-out fold. With this set the run reports
         # validation only, so a hyperparameter search cannot consult fold 0 even
@@ -168,6 +169,9 @@ def main() -> None:
     p.add_argument("--dropout", type=float, default=None)
     p.add_argument("--hidden", type=int, default=None,
                    help="hidden width of the binned MLP; M0 only")
+    p.add_argument("--dff", type=int, default=None,
+                   help="feed-forward width of the peak-token blocks; the "
+                        "counterpart of --hidden for the token arms")
     p.add_argument("--no-test", action="store_true",
                    help="evaluate on validation only, leaving the held-out fold "
                         "untouched; use for hyperparameter selection")
