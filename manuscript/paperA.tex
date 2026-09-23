@@ -198,22 +198,18 @@ mapped to the knob that carries capacity in that arm --- the feed-forward width 
 the peak-token blocks --- and $d_{\mathrm{model}}$ held at $128$ so that the
 representation width is unchanged and the search varies capacity rather than the
 interface. Learning rate and dropout ranges are identical, selection is on fold 1,
-and fold 0 is not consulted. The search is specified here because it is the
-experiment that would settle the comparison of Sect.~\ref{sec:tuned}; at the time
-of writing it has been launched but not completed, and no result from it is reported
-anywhere in this paper.
+and fold 0 is not consulted. This is the experiment that would settle the comparison
+reported in Sect.~\ref{sec:tuned}. Its result is not reported here.
 
-\todoexp{The matched search over the peak-token arm is specified and running but not
-complete. When it finishes, the tuned-against-tuned comparison it yields replaces the
-tuned-baseline-against-untuned-treatment comparison of Sect.~\ref{sec:tuned}, and
-the reading given there must be re-derived from it.}
+\todoexp{Run the matched search. The tuned-against-tuned comparison it yields
+replaces the tuned-baseline-against-untuned-treatment comparison of
+Sect.~\ref{sec:tuned}, and that section's reading must be re-derived from it.}
 
 \hd{An exact attention ablation}
-For the same reason, the M1D-to-M1R contrast reported below is not the experiment that would price self-attention. That experiment holds the input, the peak-pooling rule, the feed-forward width, the parameter count as closely as the operator allows, and the training protocol fixed on both sides, and toggles only the self-attention operator; in particular the attention-bearing arm must use masked-mean peak pooling rather than a learned token, so that the pooling rule does not change with the operator. That experiment has not been run, and no quantity reported in this paper prices self-attention.
+For the same reason, the M1D-to-M1R contrast reported below is not the experiment that would price self-attention. That experiment holds the input, the peak-pooling rule, the feed-forward width, the parameter count as closely as the operator allows, and the training protocol fixed on both sides, and toggles only the self-attention operator; in particular the attention-bearing arm must use masked-mean peak pooling rather than a learned token, so that the pooling rule does not change with the operator. That experiment is specified but not performed here, and no quantity in this paper prices self-attention.
 
-\todoexp{The exact attention ablation described in this paragraph has not been run.
-Until it is, the M1D-to-M1R difference reported below should be read as the effect of
-the whole architectural change, not of the attention operator.}
+\todoexp{Run the exact attention ablation. Until it exists, no difference reported in
+this paper may be described as an attention effect.}
 
 \hd{Evaluation and three sources of uncertainty}
 Macro AUPRC is reported over targets with at least five held-out positives. Three distinct sources of variability bear on the contrasts, and we report them separately rather than combining them into one interval.
@@ -374,11 +370,11 @@ It is not evidence that binned representations are superior. The tuned baseline
 carries $6.2\times$ M1R's parameters, so the comparison is not capacity matched, and
 the peak-token arms have not been tuned at all. The original design was unfair to
 the baseline; this one is unfair to the treatment, in mirror image. The matched
-search specified in Methods is the experiment that would settle it, and it is not yet
-complete, so this section reports no result from it.
+search specified in Methods is the experiment that would settle it, and its result is
+not reported here.
 
-\todoexp{Result pending from the matched search specified in Methods. The reading
-offered in this section is provisional until that search lands.}
+\todoexp{Re-derive this section from the matched search when it lands; the reading
+offered here is provisional until then.}
 
 The mechanism is underfitting, not regularisation. The untuned baseline ends training
 at a presence loss of $0.01885$ against the tuned arm's $0.01084$: the tuned model
