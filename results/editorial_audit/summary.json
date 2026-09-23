@@ -1,0 +1,286 @@
+{
+  "n_molecules": 10058,
+  "n_targets": 433,
+  "prevalence_reference": 0.008483130484819412,
+  "max_views_used": 4,
+  "molecules_with_more_views_than_used": 2755,
+  "historical_unconditioned": {
+    "mean": 0.1129717554827312,
+    "sd": 0.0011679991570201064,
+    "values": [
+      0.11203835505042616,
+      0.11428154214494322,
+      0.1125953692528242
+    ],
+    "status": "historical summary only; paired target uncertainty unavailable",
+    "metadata_change_mean": 0.028835067811926463,
+    "metadata_change_seed_sd": 0.002093654355898386
+  },
+  "arms": {
+    "M0": {
+      "mean": 0.14180682329465766,
+      "sd": 0.001338789394177648,
+      "values": [
+        0.14325293908328207,
+        0.14155696608333412,
+        0.14061056471735678
+      ]
+    },
+    "M0T": {
+      "mean": 0.2600695754436901,
+      "sd": 0.0008036030319821225,
+      "values": [
+        0.26073186563424544,
+        0.2603012861120247,
+        0.25917557458480023
+      ]
+    },
+    "M1D": {
+      "mean": 0.15900479541888576,
+      "sd": 0.002395232663945436,
+      "values": [
+        0.1615990763231751,
+        0.15687734210000898,
+        0.1585379678334732
+      ]
+    },
+    "M1R": {
+      "mean": 0.15672307587533746,
+      "sd": 0.00254419993982076,
+      "values": [
+        0.1591265882227284,
+        0.15698429599356828,
+        0.1540583434097157
+      ]
+    },
+    "M1": {
+      "mean": 0.17089926391541158,
+      "sd": 0.002169514130641203,
+      "values": [
+        0.17308179502165236,
+        0.17087299133915554,
+        0.16874300538542683
+      ]
+    },
+    "M2": {
+      "mean": 0.18876244278580745,
+      "sd": 0.0014672372830418646,
+      "values": [
+        0.18988309597153394,
+        0.18930251956114097,
+        0.18710171282474738
+      ]
+    }
+  },
+  "contrasts": {
+    "M0T-M0": {
+      "mean": 0.11826275214903242,
+      "lo": 0.1056890621240845,
+      "hi": 0.1309451332892571,
+      "seed_sd": 0.0006847079374616055,
+      "values": [
+        0.11747892655096331,
+        0.11874432002869055,
+        0.11856500986744344
+      ],
+      "fraction_improved": 0.8729792147806005
+    },
+    "M0T-M1": {
+      "mean": 0.0891703115282785,
+      "lo": 0.07650826759970229,
+      "hi": 0.10272293899200086,
+      "seed_sd": 0.001409074558788749,
+      "values": [
+        0.08765007061259307,
+        0.08942829477286911,
+        0.09043256919937337
+      ],
+      "fraction_improved": 0.7090069284064665
+    },
+    "M0T-M2": {
+      "mean": 0.07130713265788266,
+      "lo": 0.05897743602059133,
+      "hi": 0.08449480260212665,
+      "seed_sd": 0.0006682289306078709,
+      "values": [
+        0.07084876966271145,
+        0.07099876655088369,
+        0.07207386176005282
+      ],
+      "fraction_improved": 0.6766743648960739
+    },
+    "M1-M1R": {
+      "mean": 0.014176188040074112,
+      "lo": 0.009703024252518925,
+      "hi": 0.01865468266928288,
+      "seed_sd": 0.00044160531107868535,
+      "values": [
+        0.013955206798923894,
+        0.013888695345587287,
+        0.01468466197571115
+      ],
+      "fraction_improved": 0.648960739030023
+    },
+    "M2-M1": {
+      "mean": 0.01786317887039586,
+      "lo": 0.013480219122659232,
+      "hi": 0.022192412173010087,
+      "seed_sd": 0.0009202947540712522,
+      "values": [
+        0.01680130094988161,
+        0.018429528221985417,
+        0.01835870743932055
+      ],
+      "fraction_improved": 0.6374133949191686
+    },
+    "M1R-M0": {
+      "mean": 0.01491625258067981,
+      "lo": 0.007874755693518743,
+      "hi": 0.021791801208592476,
+      "seed_sd": 0.001291166869192884,
+      "values": [
+        0.015873649139446354,
+        0.015427329910234155,
+        0.013447778692358916
+      ],
+      "fraction_improved": 0.6674364896073903
+    },
+    "M1D-M0": {
+      "mean": 0.01719797212422811,
+      "lo": 0.010287186926757454,
+      "hi": 0.02422203048702494,
+      "seed_sd": 0.0016394694031692367,
+      "values": [
+        0.018346137239893055,
+        0.015320376016674856,
+        0.017927403116116417
+      ],
+      "fraction_improved": 0.5796766743648961
+    },
+    "M1R-M1D": {
+      "mean": -0.0022817195435483003,
+      "lo": -0.006694417534004934,
+      "hi": 0.0018940446346911572,
+      "seed_sd": 0.002299232403856987,
+      "values": [
+        -0.0024724881004466984,
+        0.00010695389355929977,
+        -0.004479624423757502
+      ],
+      "fraction_improved": 0.5427251732101617
+    },
+    "M1-M0": {
+      "mean": 0.02909244062075392,
+      "lo": 0.02098965404510052,
+      "hi": 0.036853726969664505,
+      "seed_sd": 0.0008700280220232087,
+      "values": [
+        0.02982885593837025,
+        0.029316025255821443,
+        0.02813244066807007
+      ],
+      "fraction_improved": 0.7251732101616628
+    }
+  },
+  "target_resampling": {
+    "draws": 5000,
+    "seed": 20260923,
+    "unit": "target",
+    "fixed_molecules": true
+  },
+  "provenance": {
+    "source_file": "data/train_open.parquet",
+    "sha256": "34dac6ed582abe5414880349140dac024e4b766f454f51a98a7246ec1ef35007",
+    "n_rows": 414992,
+    "source_counts": {
+      "gnps": 220849,
+      "massbank": 101727,
+      "mona": 92416
+    },
+    "license_fields": [],
+    "source_id_fields": [],
+    "identity_groups_with_multiple_smiles": 780,
+    "redistribution_verified": false,
+    "limitation": "Library selection does not establish record-level licences or independent reconstruction.",
+    "prepared_hashes": {
+      "manifest.json": "e2ed729c9f779059db301d6fd65fc2161eef06ef1061e862d973509eec23062b",
+      "molecules.parquet": "568c3eb28406584559d05c918dca8073503f24ea40efbb1e80de3a1f53f19233",
+      "targets.parquet": "319d1ab2c61c6ff829820b9550d991c0647d7ebc2a426db485085e4a9b03b649",
+      "target_dictionary.csv": "0cd66c11bbf69cb07da5aa188b1d2bb081fa5e31a6f5e887d01e7a7dd88b3aba"
+    }
+  },
+  "inputs": [
+    {
+      "path": "dbf2_runs_open\\M0\\M0_test_predictions.npz",
+      "sha256": "a95f81db45c0dcf23c7019d655e57ada9053c4f2e17cce035b593d80a34522d3"
+    },
+    {
+      "path": "dbf2_runs_open\\M0_s7\\M0_s7_test_predictions.npz",
+      "sha256": "eb0cc9e20daa34e16269c420d844450495a9a000e706ccd67c5bf688e4363fb5"
+    },
+    {
+      "path": "dbf2_runs_open\\M0_s13\\M0_s13_test_predictions.npz",
+      "sha256": "01a8f928fa1571cd67b91480d7f1120c2e7497edf79aa8bb0eb50b949f345728"
+    },
+    {
+      "path": "dbf2_runs_open\\M0T\\M0T_test_predictions.npz",
+      "sha256": "ec17f238cd50679013b239d770a4f165db5b67a8ef1d7b6864364fc82267dee8"
+    },
+    {
+      "path": "dbf2_runs_open\\M0T_s7\\M0T_s7_test_predictions.npz",
+      "sha256": "3d96afc408ef5f549116e9950f3024342591b7a2fa7511b287757d372aec75f9"
+    },
+    {
+      "path": "dbf2_runs_open\\M0T_s13\\M0T_s13_test_predictions.npz",
+      "sha256": "604e4d9246cff779bdd9b3033315d37fc556354822e60543da2b81187cb013b2"
+    },
+    {
+      "path": "dbf2_runs_open\\M1D\\M1D_test_predictions.npz",
+      "sha256": "7f58909eba99b82b8ed4a3bc7f911cf1d6a35d9bdad7b6b49e79c537d3612296"
+    },
+    {
+      "path": "dbf2_runs_open\\M1D_s7\\M1D_s7_test_predictions.npz",
+      "sha256": "3eea2fdbb475d23e76a55d2f8de4412fb0785487faf7d163875d778ad64247be"
+    },
+    {
+      "path": "dbf2_runs_open\\M1D_s13\\M1D_s13_test_predictions.npz",
+      "sha256": "ecae6c0032d26dabc01f33caa1e3d23e515757f70fd5dd12bd44f3a227ef3c87"
+    },
+    {
+      "path": "dbf2_runs_open\\M1R\\M1R_test_predictions.npz",
+      "sha256": "85187f556d797710866002393bb7a69a4ae0eb75d66b2af616e3f7044fcbc31b"
+    },
+    {
+      "path": "dbf2_runs_open\\M1R_s7\\M1R_s7_test_predictions.npz",
+      "sha256": "2d193a89964b74d80a5dd83d899d54cff2de9633b5805e535055be9c34882483"
+    },
+    {
+      "path": "dbf2_runs_open\\M1R_s13\\M1R_s13_test_predictions.npz",
+      "sha256": "0b159db228c6328acaa2e5b947936fe20d77057553be5851efde17353d48a157"
+    },
+    {
+      "path": "dbf2_runs_open\\M1\\M1_test_predictions.npz",
+      "sha256": "25133e8eb12fd500db31b28f704bd7f995eef81c8bab5dcc3336c8e71d58d5f8"
+    },
+    {
+      "path": "dbf2_runs_open\\M1_s7\\M1_s7_test_predictions.npz",
+      "sha256": "04bf7ff70093434f99e183b23f3dfdf336dccdcf59a355a3ed4418f33f1af820"
+    },
+    {
+      "path": "dbf2_runs_open\\M1_s13\\M1_s13_test_predictions.npz",
+      "sha256": "49a801c1f7e3bbf8ef175fca2bfecc2aecc28700b89c536b32d9f4504cdbe611"
+    },
+    {
+      "path": "dbf2_runs_open\\M2\\M2_test_predictions.npz",
+      "sha256": "36c34e38b857275acfcafc3df6aa48c2baf9ea9feddf89d7200e280898e9f6ca"
+    },
+    {
+      "path": "dbf2_runs_open\\M2_s7\\M2_s7_test_predictions.npz",
+      "sha256": "734e20f12d0e5e143e97b1c9008d08c2cea21b7ca2760cf301666ed20de070b6"
+    },
+    {
+      "path": "dbf2_runs_open\\M2_s13\\M2_s13_test_predictions.npz",
+      "sha256": "9f19af5f9be51214ec551424b7e587b866e7b229e5b129d6b72dc0246a99ca33"
+    }
+  ]
+}
