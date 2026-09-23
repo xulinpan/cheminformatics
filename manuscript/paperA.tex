@@ -39,7 +39,7 @@ binned baselines is not robust to how the comparator is built}
 
 \subsection*{Abstract}
 \small
-Machine-learning methods for tandem mass spectrometry (MS/MS) increasingly replace binned intensity vectors with models reading individual peaks at full mass precision, and gains over binned baselines are often read as evidence for the richer representation. Such comparisons also change the encoder, the pooling rule, the acquisition information supplied and the effort spent on each arm. We separate these sources in MS/MS substructure prediction on an openly licensed corpus of $414{,}992$ spectra from GNPS, MassBank and MoNA spanning $66$ instrument types. Across $10{,}058$ held-out molecules and three seeds, an unconditioned binned baseline trails a full-precision peak-token model by $+0.0579$ macro AUPRC. Two interventions on the comparator alone remove that gap. Supplying the binned baseline with the acquisition covariates the peak-token arms already received raises it from $0.1130$ to $0.1418$. A prespecified search of its own, selected on the validation fold and never consulting fold 0, raises it to $0.2601 \pm 0.0008$ --- above every peak-token arm in every seed. Tuning is worth $+0.1183$, four times the metadata correction and more than every modelling effect here combined; its selected configuration sits on the grid boundary, so it is a lower bound. Contrasts not involving the baseline are unaffected: inside a fixed encoder, restoring full mass precision contributes $+0.0142$ ($95\%$ interval $+0.0097$ to $+0.0187$), and multi-spectrum aggregation $+0.0179$. We do not conclude that binned representations are superior --- the tuned baseline carries $6.2\times$ the parameters and the peak-token arms are untuned --- but that no ordering follows from a comparison of this kind, and that comparator construction must be controlled before a representation gain is attributed.
+Machine-learning methods for tandem mass spectrometry (MS/MS) increasingly replace binned intensity vectors with models reading individual peaks at full mass precision, and gains over binned baselines are often read as evidence for the richer representation. Such comparisons also change the encoder, the pooling rule, the acquisition information supplied and the effort spent on each arm. We separate these sources in MS/MS substructure prediction on an openly licensed corpus of $414{,}992$ spectra from GNPS, MassBank and MoNA spanning $66$ instrument types. Across $10{,}058$ held-out molecules and three seeds, an unconditioned binned baseline trails a full-precision peak-token model by $+0.0579$ macro AUPRC. Two interventions on the comparator alone remove that gap. Supplying the binned baseline with the acquisition covariates the peak-token arms already received raises it from $0.1130$ to $0.1418$. A prespecified search of its own, selected on the validation fold and never consulting fold 0, raises it to $0.2601 \pm 0.0008$ --- above every peak-token arm in every seed. Tuning is worth $+0.1183$, four times the metadata correction and more than every modelling effect here combined; its selected configuration sits on the grid boundary, so it is a lower bound. Contrasts not involving the baseline are unaffected: inside a fixed encoder, restoring full mass precision contributes $+0.0142$ ($95\%$ interval $+0.0097$ to $+0.0187$), the study's one single-factor intervention. We do not conclude that binned representations are superior --- the tuned baseline carries $6.2\times$ the parameters and the peak-token arms are untuned --- but that no ordering follows from a comparison of this kind, and that comparator construction must be controlled before a representation gain is attributed.
 \normalsize
 
 \hd{Scientific contribution}
@@ -104,7 +104,7 @@ The five arms are ordered as M0, M1D, M1R, M1 and M2. The ladder decomposes the 
 
 \emph{M1, full-precision peak-token model.} M1 is identical to M1R except that mass quantisation is disabled, so the model receives the instrument-reported mass precision. The M1-to-M1R contrast isolates the mass-axis precision intervention within a fixed encoder, pooling rule, training protocol and parameter count.
 
-\emph{M2, multi-spectrum aggregation.} M2 is identical to M1 except that the mean over a molecule's spectra is replaced by the measurement model specified below. The M2-to-M1 contrast isolates the tested aggregation intervention: the encoder, the mass axis, the peak pooling, the training protocol and the target heads are unchanged, and the aggregation module supplies the only additional parameters.
+\emph{M2, multi-spectrum aggregation.} M2 is identical to M1 except that the mean over a molecule's spectra is replaced by the measurement model specified below. The encoder, the mass axis, the peak pooling, the training protocol and the target heads are unchanged. The contrast is nonetheless composite rather than single-factor, and we label it so throughout: the measurement model replaces M1's linear output head with a learned per-target prior, covariate-dependent scaling and a logistic--Gaussian output map, all of which act even on a molecule represented by a single spectrum, where there is nothing to aggregate. Sect.~\ref{sec:agg} reports the stratification that separates the two components empirically.
 
 \hd{Peak encoding}
 Each peak is encoded as a token. For a peak at $\mz=m$ in a spectrum with precursor mass $m^{\mathrm{prec}}$, we form a multi-scale sinusoidal embedding
@@ -261,7 +261,7 @@ M1D $-$ M0 & binned token-encoder package & composite & +0.0172 & [+0.0102, +0.0
 M1R $-$ M1D & attention-bearing vs approximately capacity-matched attention-free configuration & composite & -0.0023 & [-0.0066, +0.0020] & 54.3\%\\
 M1R $-$ M0 & rounded token-encoder package & composite & +0.0149 & [+0.0080, +0.0221] & 66.7\%\\
 M1 $-$ M1R & mass-axis precision & one-factor & +0.0142 & [+0.0097, +0.0187] & 64.9\%\\
-M2 $-$ M1 & multi-spectrum aggregation & one-factor & +0.0179 & [+0.0136, +0.0223] & 63.7\%\\
+M2 $-$ M1 & measurement model: aggregation and calibration & composite & +0.0179 & [+0.0136, +0.0223] & 63.7\%\\
 M1 $-$ M0 & joint token-pipeline and mass-axis difference & composite & +0.0291 & [+0.0208, +0.0371] & 72.5\%\\
 M2 $-$ M0 & all changes combined & composite & +0.0470 & [+0.0377, +0.0566] & 73.9\%\\
 \bottomrule
@@ -280,8 +280,26 @@ M1D minus M0 is $+0.0172$ ($+0.0102$ to $+0.0242$), and M1R minus M1D is $-0.002
 
 We do not read the negative mean as evidence that attention is harmful, and we do not read the result as an attention effect at all: M1D and M1R differ in the attention operator, in peak pooling and in feed-forward width together. The defensible statement is narrow --- the tested attention-bearing configuration was not necessary to reach the rounded-token performance observed here --- and the experiment that would price the operator is specified in Methods and has not been run.
 
-\hd{5. Multi-spectrum aggregation contributes an additional gain (\onefactor)}
-Replacing the masked mean over a molecule's spectra with the measurement model of Eqs.~(2)--(8) is worth $+0.0179$ ($+0.0136$ to $+0.0223$; $63.7\%$ of targets). All other components are unchanged, so this isolates the tested aggregation intervention, though not the general question of how best to aggregate.
+\hd{5. The measurement model contributes an additional gain, only part of which is aggregation (\composite)}
+\label{sec:agg}
+Replacing the masked mean over a molecule's spectra with the measurement model of Eqs.~(2)--(8) is worth $+0.0179$ ($+0.0136$ to $+0.0223$; $63.7\%$ of targets).
+
+This is not a pure aggregation effect, and stratifying the held-out set by the
+number of spectra per molecule shows why. On the $3{,}443$ molecules represented by
+a \emph{single} spectrum --- where there is nothing to pool --- M2 still exceeds M1
+by $+0.0085$. The gain rises to $+0.0101$ on the $2{,}137$ molecules with two
+spectra and $+0.0143$ on the $4{,}478$ with three or four. The single-spectrum
+increment is attributable to the measurement model's other components: at $K_i=1$
+Eqs.~(7)--(9) still apply a learned per-target prior, covariate-dependent scaling
+and the logistic--Gaussian output map, none of which M1's linear head has. Roughly
+half of the reported $+0.0179$ is therefore calibration rather than multi-spectrum
+pooling, and the contrast is composite.
+
+The monotone trend across strata is consistent with a genuine aggregation component
+on top of that, and it carries a second implication: the evaluation uses at most
+four spectra per molecule, while $2{,}755$ of the $10{,}058$ held-out molecules have
+more available. The reported figure is therefore measured under a cap that
+Eqs.~(7)--(8) do not require, and probably understates what the pooling contributes.
 
 It exceeds the M1R-to-M0 package in all three seeds by $+0.0009$, $+0.0030$ and $+0.0049$, and the mass-axis intervention in all three by $+0.0028$, $+0.0045$ and $+0.0037$; the same direction against the package holds in all three seeds on the sensitivity corpus. With three seeds per corpus we treat this as a consistent empirical ordering in these runs rather than an established general ranking. Its relevance to the paper's argument is that a component with nothing to do with spectral representation produces an effect of the same magnitude as the representation change being studied.
 
@@ -498,7 +516,14 @@ The bin-width sweep is likewise suggestive rather than definitive. It indicates 
 
 \emph{Inference.} The target-resampling bootstrap does not capture uncertainty in which structures were held out; the scaffold-cluster bootstrap addresses that but holds the target set fixed. BRICS targets are correlated because fragments co-occur, so target-resampling intervals are narrower than fully independent resampling would give. Neither interval covers scaffold-split choice or the population of MS/MS tasks.
 
-\emph{Ablation.} M1D-to-M1R is not a pure attention contrast, because pooling and feed-forward width change with the operator. M1R-to-M0 is composite in four respects at once, including the mechanism by which metadata are injected; a dense baseline conditioned through adaptive normalisation rather than concatenation would test whether the $+0.0149$ depends on that mechanism.
+\emph{Ablation.} M1D-to-M1R is not a pure attention contrast, because pooling and feed-forward width change with the operator. M1R-to-M0 is composite in four respects at once, including the mechanism by which metadata are injected; a dense baseline conditioned through adaptive normalisation rather than concatenation would test whether the $+0.0149$ depends on that mechanism. M2-to-M1 is composite too: the measurement model changes the output head as well as the pooling, and about half its increment is present on molecules with a single spectrum. Only M1-to-M1R changes one component.
+
+\emph{Aggregation under a cap.} Evaluation uses at most four spectra per molecule,
+although $2{,}755$ of the $10{,}058$ held-out molecules have more, and the
+measurement-model gain rises monotonically with the number of spectra used. The
+reported figure is therefore a lower bound on what pooling contributes, and the
+claim in Methods that the additive sufficient statistics impose no cap on $K_i$
+describes the estimator rather than the experiment run here.
 
 \emph{Data.} The secondary corpus is a deliberately contrasting in-house slice of the same aggregate resource, not an external or independent dataset. The instrument-resolution explanation for the difference between corpora is not tested directly.
 
@@ -524,11 +549,13 @@ comparison does not determine an ordering.
 Second, the contrasts that never involve the comparator are unaffected, and they are
 the ones a within-architecture design was built to protect. Restoring full mass
 precision inside a fixed peak-token encoder contributes $+0.0142$, with the encoder,
-pooling rule, parameter count and schedule held fixed; it is the most reproducible
-effect in the study across seeds, targets and held-out structures alike. Multi-spectrum
-aggregation contributes $+0.0179$ on the same footing. Mass precision carries real
-predictive information, and that statement stands independently of how the binned
-baseline is built, because no binned baseline enters it.
+pooling rule, parameter count and schedule held fixed; it is the study's only
+single-factor intervention and the most reproducible effect in it, across seeds,
+targets and held-out structures alike. Mass precision carries real predictive
+information, and that statement stands independently of how the binned baseline is
+built, because no binned baseline enters it. The measurement model contributes
+$+0.0179$ on the same comparator-free footing, but that figure bundles
+multi-spectrum pooling with a change of output head and is reported as composite.
 
 Third, comparator construction dominated every modelling effect this study set out to
 measure. The metadata correction was worth $+0.0288$ and the tuning correction
@@ -563,7 +590,7 @@ Not applicable.
 
 \emph{Environment.} \texttt{requirements-lock.txt} pins every dependency at the versions used for the reported runs (PyTorch 2.11.0+cu128, Python 3.14, NumPy 2.4.4, pandas 2.3.3, RDKit 2026.3.6, pyarrow 24.0.0), and \texttt{pyproject.toml} declares the supported ranges. Continuous integration runs the test suites on Python 3.10--3.13.
 
-\emph{Primary corpus.} The primary corpus consists of the spectra contributed by GNPS, MassBank and MoNA. Those libraries are openly licensed and obtainable from their original sources; licences are declared per record at all three, so a redistributable assembly must filter on the per-record licence field rather than assume a library-level licence. The selection used here was made from the aggregated CASMI 2026 file distributed by the competition organisers, by \texttt{scripts/make\_open\_subset.py}, which filters on the \texttt{ingest\_lib} field. Reproducing this selection therefore currently requires that aggregated file. \texttt{docs/corpus\_composition.md} records each source library's contribution and which parts are redistributable.
+\emph{Primary corpus.} The primary corpus consists of the $414{,}992$ spectra whose \texttt{ingest\_lib} field names GNPS ($220{,}849$), MassBank ($101{,}727$) or MoNA ($92{,}416$), selected by \texttt{scripts/make\_open\_subset.py} from the aggregated CASMI 2026 file distributed by the competition organisers. Two limitations of that route must be stated rather than implied. The aggregated file carries no per-record licence column, and all three sources declare licences per record, so library membership does not establish that any individual record is redistributable. It also carries no accession, spectrum identifier or USI column, so the selected records cannot be matched back to their source entries or re-fetched from GNPS, MassBank and MoNA by identifier. Reproducing this corpus therefore currently requires the aggregated file, and assembling a redistributable equivalent would require re-deriving it from the sources with those fields retained. \texttt{docs/corpus\_composition.md} records each source library's contribution and which parts are redistributable.
 
 \emph{Filtering and identity.} Records are retained if precursor $\mz<2{,}000$ and reported precursor error is within $20$~ppm; peaks above $0.1\%$ of the base peak and below precursor $+1.5$~Da are kept, capped at the 256 most intense. Molecular identity is the 14-character InChIKey first block, and folds are assigned by generic Murcko scaffold group as described in Methods; \texttt{scripts/split\_integrity\_audit.py} reproduces the audit reported there.
 
