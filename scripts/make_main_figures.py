@@ -68,11 +68,16 @@ save(fig, "figure1_arm_means")
 # single-factor intervention and a composite contrast survives greyscale printing
 # and colour-vision deficiency. Labels sit left of each interval rather than at the
 # right-hand end, where they previously collided with the widest intervals.
-ROWS = [("M1D-M0", "M1D $-$ M0", "binned token-encoder package", True),
+# M2 - M1 is composite, not one-factor: stratifying the held-out set by spectra per
+# molecule shows the measurement model ahead of M1 by +0.0085 on molecules with a
+# single spectrum, where there is nothing to pool, so the contrast carries a change
+# of output head as well as a change of pooling rule. M1 - M1R is the study's only
+# single-factor intervention and is the only row drawn as one.
+ROWS = [("M1D-M0", "M1D $-$ M0", "attention-free rounded token package", True),
         ("M1R-M1D", "M1R $-$ M1D", "attention-bearing vs attention-free", True),
         ("M1R-M0", "M1R $-$ M0", "rounded token-encoder package", True),
         ("M1-M1R", "M1 $-$ M1R", "mass-axis precision", False),
-        ("M2-M1", "M2 $-$ M1", "multi-spectrum aggregation", False)]
+        ("M2-M1", "M2 $-$ M1", "measurement model: pooling and calibration", True)]
 
 fig, ax = plt.subplots(figsize=(7.4, 3.4))
 for i, (key, name, interp, composite) in enumerate(ROWS):
@@ -97,7 +102,9 @@ ax.plot([], [], "o", color=BLUE, ms=7, markeredgecolor="white",
         label="one-factor intervention")
 ax.plot([], [], "s", color=GREY, ms=7, markeredgecolor="white",
         label="composite contrast")
-ax.legend(frameon=False, fontsize=8, loc="lower right")
+# lower right sat on top of the M2 - M1 marker and its label; the upper-left
+# quadrant is empty because every positive contrast is to the right of zero
+ax.legend(frameon=False, fontsize=8, loc="upper left")
 save(fig, "figure2_contrasts")
 
 # ---------------------------------------------------------------- figure 3

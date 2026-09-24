@@ -23,6 +23,8 @@
 \newcommand{\hd}[1]{\medskip\par\noindent\textbf{#1}\par\nobreak\vspace{2pt}\noindent\ignorespaces}
 \newcommand{\mz}{\ensuremath{m/z}}
 \graphicspath{{./}{cheminformatics/manuscript/}{manuscript/}}
+% words the T1 patterns will not break, which pushed lines into the margin
+\hyphenation{me-tab-o-lom-ics che-min-for-mat-ics frag-men-ta-tion quan-ti-sa-tion}
 
 % Editorial markers for work that is designed but not yet run. Each marker is
 % apparatus, not manuscript text: the surrounding prose states the same status in
@@ -31,12 +33,14 @@
 % number.
 \definecolor{ednotecol}{rgb}{0.60,0.09,0.09}
 \newif\ifdraftnotes\draftnotestrue
+% the note is set in a minipage so a page break cannot fall between its rules
 \newcommand{\ednotebox}[2]{\ifdraftnotes
-  \par\medskip\noindent\textcolor{ednotecol}{\rule{\linewidth}{0.4pt}}%
+  \par\medskip\noindent\begin{minipage}{\linewidth}%
+  \noindent\textcolor{ednotecol}{\rule{\linewidth}{0.4pt}}%
   \par\nobreak\vspace{3pt}\noindent
   {\small\color{ednotecol}\textsc{#1.}\ #2\par}%
   \nobreak\vspace{3pt}\noindent\textcolor{ednotecol}{\rule{\linewidth}{0.4pt}}%
-  \par\medskip\fi}
+  \end{minipage}\par\medskip\fi}
 \newcommand{\todoexp}[1]{\ednotebox{Outstanding experiment}{#1}}
 \newcommand{\todoana}[1]{\ednotebox{Outstanding analysis}{#1}}
 \newcommand{\todoarchive}{\ifdraftnotes\ \textcolor{ednotecol}{\small\textsc{[outstanding:
@@ -58,7 +62,7 @@ binned baselines is not robust to how the comparator is built}
 
 \subsection*{Abstract}
 \small
-Machine-learning methods for tandem mass spectrometry (MS/MS) increasingly replace binned intensity vectors with models reading individual peaks at full mass precision, and gains over binned baselines are often read as evidence for the richer representation. Such comparisons also change the encoder, the pooling rule, the acquisition information supplied and the effort spent on each arm. We separate these sources in MS/MS substructure prediction on an openly licensed corpus of $414{,}992$ spectra from GNPS, MassBank and MoNA spanning $66$ instrument types. Across $10{,}058$ held-out molecules and three seeds, an unconditioned binned baseline trails a full-precision peak-token model by $+0.0579$ macro AUPRC. Two interventions on the comparator alone remove that gap. Supplying the binned baseline with the acquisition covariates the peak-token arms already received raises it from $0.1130$ to $0.1418$. A prespecified search of its own, selected on the validation fold and never consulting fold 0, raises it to $0.2601 \pm 0.0008$ --- above every peak-token arm in every seed. Tuning is worth $+0.1183$, four times the metadata correction and more than every modelling effect here combined; its selected configuration sits on the grid boundary, so it is a lower bound. Contrasts not involving the baseline are unaffected: inside a fixed encoder, restoring full mass precision contributes $+0.0142$ ($95\%$ interval $+0.0097$ to $+0.0187$), the study's one single-factor intervention. We do not conclude that binned representations are superior --- the tuned baseline carries $6.2\times$ the parameters and the peak-token arms are untuned --- but that no ordering follows from a comparison of this kind, and that comparator construction must be controlled before a representation gain is attributed.
+Machine-learning methods for tandem mass spectrometry (MS/MS) increasingly replace binned intensity vectors with models reading individual peaks at full mass precision, and gains over binned baselines are often read as evidence for the richer representation. Such comparisons also change the encoder, the pooling rule, the acquisition information supplied and the effort spent on each arm. We separate these sources in MS/MS substructure prediction on a corpus of $414{,}992$ spectra drawn from the public GNPS, MassBank and MoNA libraries and spanning $66$ instrument types. Across $10{,}058$ held-out molecules and three seeds, an unconditioned binned baseline trails a full-precision peak-token model by $+0.0579$ macro AUPRC. Two interventions on the comparator alone remove that gap. Supplying the binned baseline with the acquisition covariates the peak-token arms already received raises it from $0.1130$ to $0.1418$. A prespecified search of its own, selected on the validation fold and never consulting fold 0, raises it to $0.2601 \pm 0.0008$ --- above every peak-token arm in every seed. Tuning is worth $+0.1183$, four times the metadata correction and more than every modelling effect here combined; its selected configuration sits on the grid boundary, so it is a lower bound. Contrasts not involving the baseline are unaffected: inside a fixed encoder, restoring full mass precision contributes $+0.0142$ ($95\%$ interval $+0.0097$ to $+0.0187$), the study's one single-factor intervention. We do not conclude that binned representations are superior --- the tuned baseline carries $6.2\times$ the parameters and the peak-token arms are untuned --- but that no ordering follows from a comparison of this kind, and that comparator construction must be controlled before a representation gain is attributed.
 \normalsize
 
 \hd{Scientific contribution}
@@ -91,7 +95,7 @@ This paper does not propose a state-of-the-art structure-prediction architecture
 \hd{Corpora and splits}
 Both corpora are drawn from the CASMI 2026 training corpus, an aggregation of eleven public and in-house MS/MS libraries whose \texttt{ingest\_lib} field records the source library.
 
-The primary corpus is the openly licensed subset contributed by GNPS, MassBank and MoNA: $414{,}992$ spectra over $52{,}428$ structures, spanning $66$ instrument types and $112$ adducts. After filtering, $372{,}200$ spectra over $50{,}287$ structures and $24{,}627{,}256$ peaks remain for modelling. We distinguish these source and retained counts throughout. All primary results are reported on this corpus.
+The primary corpus is the subset contributed by the public GNPS, MassBank and MoNA libraries: $414{,}992$ spectra over $52{,}428$ structures, spanning $66$ instrument types and $112$ adducts. After filtering, $372{,}200$ spectra over $50{,}287$ structures and $24{,}627{,}256$ peaks remain for modelling. We distinguish these source and retained counts throughout. All primary results are reported on this corpus.
 
 The secondary corpus is a contiguous slice of two of the file's twenty-one row groups, containing $262{,}144$ spectra. Because the file is ordered by source library, this slice is not a random sample: it is $99.0\%$ one in-house library and $1.0\%$ another, and $99\%$ of spectra come from a single instrument (timsTOF), across two instrument types and sixteen adducts. We use it as a deliberately contrasting sensitivity corpus. It is not an external validation set and not an independent replication: it is drawn from the same aggregate resource, processed by the same code, and is not redistributable.
 
@@ -107,13 +111,13 @@ Scaffold grouping is stricter than a random split over spectra, and stricter tha
 \hd{Split-integrity audit}
 We verified the split rather than asserting it. On the primary corpus, across $50{,}287$ structures and $372{,}200$ retained spectra: no molecular identifier occurred in more than one fold ($0$ of $50{,}287$); no scaffold group occurred in more than one fold ($0$ of $19{,}648$ groups, of which $7{,}456$ are acyclic structures keyed by their own identifier); every spectrum inherited the fold of its structure, with none unassigned. Fold sizes are $10{,}058$, $10{,}058$, $10{,}057$, $10{,}057$ and $10{,}057$ structures. The same audit on the sensitivity corpus is likewise clean: $0$ of $43{,}536$ identifiers and $0$ of $13{,}620$ scaffold groups span folds.
 
-Fold 0 of the primary corpus contains $10{,}058$ structures and all $10{,}058$ are evaluated. Fold 0 of the sensitivity corpus contains $8{,}708$ structures, of which $16$ are structures recoverable from the CASMI competition test set by exact spectral duplicate matching; those are excluded from both fitting and evaluation, leaving the $8{,}692$ reported. No such structures are present in the primary corpus, which is one further reason to treat it as primary. The audit is reproduced by \texttt{scripts/split\_integrity\_audit.py}.
+Fold 0 of the primary corpus contains $10{,}058$ structures and all $10{,}058$ are evaluated. Fold 0 of the sensitivity corpus contains $8{,}708$ structures, of which $16$ are structures recoverable from the CASMI competition test set by exact spectral duplicate matching; those are excluded from both fitting and evaluation, leaving the $8{,}692$ reported. The overlap was reported to the competition organisers, and the recovered structures were used only to remove those records from fitting and evaluation: no competition submission was derived from them. No such structures are present in the primary corpus, which is one further reason to treat it as primary. The audit is reproduced by \texttt{scripts/split\_integrity\_audit.py}.
 
 \hd{Structural targets}
 Each structure was decomposed with BRICS and represented by the presence or absence of each of the $512$ most frequent attachment-labelled fragments, with the vocabulary fitted on the training folds only. On the primary corpus the target matrix is $99.3\%$ zero with a median of four positive targets per molecule. A total of $433$ targets have at least five held-out positives, at a mean prevalence of $0.0085$, which is the chance level for macro AUPRC. The sensitivity corpus is less sparse ($97.1\%$ zero, median $17$ positive targets, $477$ scored targets, mean prevalence $0.0093$). Because the targets are highly imbalanced, macro AUPRC is the primary metric; macro AUROC, micro AUPRC and Brier score are secondary summaries.
 
 \hd{Five-arm ablation ladder}
-The five arms are ordered as M0, M1D, M1R, M1 and M2. The ladder decomposes the observed pipeline difference, but not every adjacent contrast is a single-factor intervention. M1R-to-M1 and M2-to-M1 change one component; M0-to-M1D and M1D-to-M1R change several simultaneously and are labelled composite wherever they appear.
+The five arms are ordered as M0, M1D, M1R, M1 and M2. The ladder decomposes the observed pipeline difference, but not every adjacent contrast is a single-factor intervention. M1R-to-M1 changes one component. M0-to-M1D, M1D-to-M1R and M2-to-M1 change several simultaneously and are labelled composite wherever they appear.
 
 \emph{M0, metadata-matched dense baseline.} Each spectrum is projected onto $2{,}048$ fragment bins and $2{,}048$ precursor-minus-fragment bins of width $0.5$~Da over $[0,1024)$, with square-root intensity accumulated within bins and the concatenated $4{,}096$-dimensional vector $L_2$-normalised. A two-layer perceptron encodes the vector. Collision energy, adduct, polarity and instrument embeddings are concatenated to the dense representation. This gives M0 access to the same acquisition variables as the peak-token arms, although the conditioning mechanism is not identical: the token encoder injects them through adaptive layer normalisation. We therefore describe the corrected comparator as metadata \emph{matched}, not as mechanically identical in conditioning, and we treat the difference in mechanism as a limitation of the M1R-to-M0 contrast rather than a property of it.
 
@@ -173,7 +177,7 @@ and the reported probability uses the logistic--Gaussian approximation
 Because $S^{(1)}$ and $S^{(2)}$ are sums over spectra, a molecule's spectra need not be processed in one pass: statistics accumulated over chunks give the same posterior, so no cap on $K_i$ is required. All aggregation parameters ($\alpha^0,a,\beta^0,b,s^0,s,\tau,W,b,W',b'$) are trained jointly with the encoder by the same objective; none is fitted post hoc.
 
 \hd{Bin-width sweep}
-To examine the precision scale continuously, we repeated the M1R construction at $w\in\{0.25,0.1,0.05,0.01\}$~Da, holding the encoder, parameter count, training schedule and seed fixed. Together with $w=0.5$ and full precision, this produces six mass-resolution settings. The sweep was run on the sensitivity corpus only and each intermediate width was trained once; it is exploratory except at its endpoints.
+To examine the precision scale continuously, we repeated the M1R construction at $w=0.25$, $0.1$, $0.05$ and $0.01$~Da, holding the encoder, parameter count, training schedule and seed fixed. Together with $w=0.5$ and full precision, this produces six mass-resolution settings. The sweep was run on the sensitivity corpus only and each intermediate width was trained once; it is exploratory except at its endpoints.
 
 \hd{Training protocol}
 Every arm was trained for 15 epochs with AdamW, a one-cycle learning-rate schedule peaking at $10^{-3}$, batches of 16 molecules, mixed precision and gradient clipping at 1.0. The objective was binary cross-entropy over the 512 BRICS-presence targets plus an auxiliary negative-binomial term on 88 functional-group counts. Checkpoints were selected by validation macro AUPRC on fold 1. The five ladder arms on the primary corpus and four arms on the sensitivity corpus were each trained under seeds $\{2026,7,13\}$, for 27 ladder runs in total, in addition to the single-seed sweep runs.
@@ -238,18 +242,27 @@ comparator moved the answer more than the modelling choices being compared.
 
 \begin{table}[ht]
 \centering
-\caption{Five-arm ablation ladder on the primary corpus. Macro AUPRC on $10{,}058$ held-out molecules, averaged over three seeds. Chance is $0.0085$ over $433$ scored targets. Pooling is given on two axes because different pairs of arms differ on different ones: peak pooling within a spectrum distinguishes M1D from M1R, spectrum pooling within a molecule distinguishes M2 from M1.}
+\caption{Five-arm ablation ladder on the primary corpus, measured against the
+metadata-matched but \emph{untuned} dense baseline. Sect.~\ref{sec:tuned} reports
+the same arms against the tuned one, where the ordering reverses. The AUPRC column is macro AUPRC on
+$10{,}058$ held-out molecules, averaged over three seeds, and SD its spread over
+those seeds; ``attn.'' is self-attention. Chance is $0.0085$ over
+$433$ scored targets. Pooling is given on two axes because different pairs of arms
+differ on different ones: peak pooling within a spectrum distinguishes M1D from
+M1R, spectrum pooling within a molecule --- the ``Spectra'' column, where
+``meas.\ model'' is the measurement model of Eqs.~(2)--(9) --- distinguishes M2
+from M1.}
 \label{tab:arms}
-\small
+\small\setlength{\tabcolsep}{3pt}
 \begin{tabular}{lllllrrr}
 \toprule
-Arm & Mass axis & Encoder/interface & Peak pooling & Spectrum pooling & Parameters & Macro AUPRC & Seed SD\\
+Arm & Mass axis & Encoder & Peak pooling & Spectra & Parameters & AUPRC & SD\\
 \midrule
-M0 & 0.5 Da bins & dense vector, MLP & bin accumulation & mean & 1,172,752 & 0.1418 & 0.0013\\
-M1D & 0.5 Da grid & peak tokens, attention-free & masked mean & mean & 714,528 & 0.1590 & 0.0024\\
-M1R & 0.5 Da grid & peak tokens, attention-bearing & learned token & mean & 712,336 & 0.1567 & 0.0025\\
-M1 & full precision & peak tokens, attention-bearing & learned token & mean & 712,336 & 0.1709 & 0.0022\\
-M2 & full precision & peak tokens, attention-bearing & learned token & measurement model & 829,584 & 0.1888 & 0.0015\\
+M0 (untuned) & 0.5 Da bins & dense MLP & bin sum & mean & 1,172,752 & 0.1418 & 0.0013\\
+M1D & 0.5 Da grid & tokens, no attn.\ & masked mean & mean & 714,528 & 0.1590 & 0.0024\\
+M1R & 0.5 Da grid & tokens, attn.\ & learned token & mean & 712,336 & 0.1567 & 0.0025\\
+M1 & full precision & tokens, attn.\ & learned token & mean & 712,336 & 0.1709 & 0.0022\\
+M2 & full precision & tokens, attn.\ & learned token & meas.\ model & 829,584 & 0.1888 & 0.0015\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -273,14 +286,19 @@ Its numerical similarity to the mass-axis increment supports a negative statemen
 
 \begin{table}[ht]
 \centering
-\caption{Paired target-level contrasts on the primary corpus, with $95\%$ target-resampling intervals after averaging target AP across the three seeds. The Kind column states what each contrast changes; causal language in the text is confined to the single-factor rows.}
+\caption{Paired target-level contrasts on the primary corpus, with $95\%$
+target-resampling intervals after averaging target AP across the three seeds. Every
+row is measured against the untuned dense baseline of Table~\ref{tab:arms};
+Table~\ref{tab:tuned} gives the same arms against the tuned one. The Kind column
+states what each contrast changes; causal language in the text is confined to the
+single-factor row.}
 \label{tab:contrasts}
 \small
 \begin{tabularx}{\linewidth}{lXlrrr}
 \toprule
 Contrast & Interpretation & Kind & $\Delta$ AUPRC & 95\% interval & Targets improved\\
 \midrule
-M1D $-$ M0 & binned token-encoder package & composite & +0.0172 & [+0.0102, +0.0242] & 58.0\%\\
+M1D $-$ M0 & attention-free rounded token-encoder package & composite & +0.0172 & [+0.0102, +0.0242] & 58.0\%\\
 M1R $-$ M1D & attention-bearing vs approximately capacity-matched attention-free configuration & composite & -0.0023 & [-0.0066, +0.0020] & 54.3\%\\
 M1R $-$ M0 & rounded token-encoder package & composite & +0.0149 & [+0.0080, +0.0221] & 66.7\%\\
 M1 $-$ M1R & mass-axis precision & one-factor & +0.0142 & [+0.0097, +0.0187] & 64.9\%\\
@@ -294,18 +312,24 @@ M2 $-$ M0 & all changes combined & composite & +0.0470 & [+0.0377, +0.0566] & 73
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.88\linewidth]{figure2_contrasts.pdf}
-\caption{Paired target-level contrasts on the primary corpus with $95\%$ target-resampling intervals. Single-factor interventions and composite contrasts are distinguished by marker shape as well as by colour; composite contrasts are those whose arms differ in more than the named component.}
+\caption{Paired target-level contrasts on the primary corpus with $95\%$
+target-resampling intervals, all measured against the untuned dense baseline.
+Marker shape as well as colour separates the one single-factor intervention,
+M1~$-$~M1R, from the composite contrasts, whose arms differ in more than the named
+component. Every contrast here is superseded by Sect.~\ref{sec:tuned} wherever M0
+enters it.}
 \label{fig:contrasts}
 \end{figure}
 
 \hd{4. The present attention comparison does not isolate a self-attention effect (\composite)}
+\hdlab{4}{sec:attn}
 M1D minus M0 is $+0.0172$ ($+0.0102$ to $+0.0242$), and M1R minus M1D is $-0.0023$ ($-0.0066$ to $+0.0020$), an interval containing zero, with $54.3\%$ of targets improved and a positive mean in only one seed of three. The attention-bearing rounded-token model is therefore not shown to outperform the approximately capacity-matched attention-free one in this comparison.
 
 We do not read the negative mean as evidence that attention is harmful, and we do not read the result as an attention effect at all: M1D and M1R differ in the attention operator, in peak pooling and in feed-forward width together. The defensible statement is narrow --- the tested attention-bearing configuration was not necessary to reach the rounded-token performance observed here --- and the experiment that would price the operator is specified in Methods and has not been run.
 
 \hd{5. The measurement model contributes an additional gain, only part of which is aggregation (\composite)}
 \hdlab{5}{sec:agg}
-Replacing the masked mean over a molecule's spectra with the measurement model of Eqs.~(2)--(8) is worth $+0.0179$ ($+0.0136$ to $+0.0223$; $63.7\%$ of targets).
+Replacing the masked mean over a molecule's spectra with the measurement model of Eqs.~(2)--(9) is worth $+0.0179$ ($+0.0136$ to $+0.0223$; $63.7\%$ of targets).
 
 This is not a pure aggregation effect, and stratifying the held-out set by the
 number of spectra per molecule shows why. On the $3{,}443$ molecules represented by
@@ -326,8 +350,8 @@ Eqs.~(7)--(8) do not require, and probably understates what the pooling contribu
 
 It exceeds the M1R-to-M0 package in all three seeds by $+0.0009$, $+0.0030$ and $+0.0049$, and the mass-axis intervention in all three by $+0.0028$, $+0.0045$ and $+0.0037$; the same direction against the package holds in all three seeds on the sensitivity corpus. With three seeds per corpus we treat this as a consistent empirical ordering in these runs rather than an established general ranking. Its relevance to the paper's argument is that a component with nothing to do with spectral representation produces an effect of the same magnitude as the representation change being studied.
 
-\hd{5b. A tuned comparator removes the advantage entirely}
-\hdlab{5b}{sec:tuned}
+\hd{6. A tuned comparator removes the advantage entirely}
+\hdlab{6}{sec:tuned}
 The search prespecified in Methods was run: 18 configurations, fitted on folds 2--4,
 selected on fold 1, fold 0 never consulted. The grid reproduced the incumbent's
 validation score exactly at the incumbent's settings ($0.1702$), and selected
@@ -337,29 +361,36 @@ tuned baseline reaches $0.2601 \pm 0.0008$ against the untuned $0.1418$
 (Table~\ref{tab:tuned}).
 
 Every peak-token arm now sits below the dense baseline, in all three seeds:
-$-0.1011$ for M1D, $-0.1033$ for M1R, $-0.0892$ for M1 and $-0.0713$ for M2.
-Tuning was worth $+0.1183$, four times the metadata correction and larger than every
-modelling effect in this study combined.
+$-0.1011$ for M1D, $-0.1033$ for M1R, $-0.0892$ for M1 and $-0.0713$ for M2. Paired
+over targets, each of those differences excludes zero by a wide margin
+(Table~\ref{tab:tuned}), with the peak-token arm ahead on $21.9\%$, $21.5\%$,
+$29.1\%$ and $32.3\%$ of scored targets respectively. Tuning was worth $+0.1183$
+($+0.1051$ to $+0.1312$, improving $87.3\%$ of targets), four times the metadata
+correction and larger than every modelling effect in this study combined.
 
 \begin{table}[ht]
 \centering
 \caption{The dense baseline before and after the prespecified search, and the
-contrasts recomputed against it. Selection used fold 1 only. The tuned configuration
-sits on the boundary of the grid in both learning rate and width, so $0.2601$ is a
-lower bound on what a fully searched dense baseline reaches.}
+contrasts recomputed against it. Selection used fold 1 only. Intervals are $95\%$
+target-resampling intervals, computed from the saved held-out predictions by the
+same procedure as Table~\ref{tab:contrasts}. The tuned
+configuration sits on the boundary of the grid in both learning rate and width, so
+$0.2601$ is a lower bound on what a fully searched dense baseline reaches. The
+incumbent configuration is lr $10^{-3}$, width $256$, dropout $0.1$; the selected one
+is lr $3\times10^{-3}$, width $1024$, dropout $0.3$.}
 \label{tab:tuned}
 \small
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrrrl}
 \toprule
- & Parameters & Macro AUPRC & Seed SD & vs tuned baseline\\
+ & Parameters & Macro AUPRC & Seed SD & vs tuned & 95\% interval\\
 \midrule
-M0, untuned (lr $10^{-3}$, width 256, dropout 0.1) & 1,172,752 & 0.1418 & 0.0013 & $-$0.1183\\
-M0, tuned (lr $3\times10^{-3}$, width 1024, dropout 0.3) & 4,442,128 & 0.2601 & 0.0008 & ---\\
+M0, untuned & 1,172,752 & 0.1418 & 0.0013 & $-$0.1183 & [$-$0.1312, $-$0.1051]\\
+M0, tuned & 4,442,128 & 0.2601 & 0.0008 & --- & ---\\
 \midrule
-M1D & 714,528 & 0.1590 & 0.0024 & $-$0.1011\\
-M1R & 712,336 & 0.1567 & 0.0025 & $-$0.1033\\
-M1 & 712,336 & 0.1709 & 0.0022 & $-$0.0892\\
-M2 & 829,584 & 0.1888 & 0.0015 & $-$0.0713\\
+M1D & 714,528 & 0.1590 & 0.0024 & $-$0.1011 & [$-$0.1138, $-$0.0888]\\
+M1R & 712,336 & 0.1567 & 0.0025 & $-$0.1033 & [$-$0.1170, $-$0.0904]\\
+M1 & 712,336 & 0.1709 & 0.0022 & $-$0.0892 & [$-$0.1027, $-$0.0756]\\
+M2 & 829,584 & 0.1888 & 0.0015 & $-$0.0713 & [$-$0.0843, $-$0.0584]\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -391,7 +422,7 @@ treatment's optimisation behaviour. A binned-versus-peak comparison can therefor
 biased before any data is seen, by inheritance rather than by intent, and this is
 checkable in any codebase in minutes.
 
-\hd{6. A contrasting acquisition regime shows a qualitatively similar ordering}
+\hd{7. A contrasting acquisition regime shows a qualitatively similar ordering}
 The same ladder was evaluated on the near-homogeneous sensitivity corpus (Table~\ref{tab:corpora}). All three principal increments are larger there, but the broad pattern is similar: the mass-axis and rounded token-encoder increments are of comparable size, their difference again changes sign across seeds ($-0.0016$, $+0.0006$, $-0.0090$), and aggregation is again substantial. The corresponding share of the M1-to-M0 difference assigned numerically to M1R-to-M0 is $46.7\%$ there against $51.3\%$ here.
 
 This is a sensitivity analysis, not an independent replication: the corpus is a contiguous in-house slice of the same aggregate CASMI resource, processed by the same code, and is not redistributable.
@@ -407,7 +438,7 @@ Contrast & Sensitivity corpus & SD & Primary corpus & SD\\
 \midrule
 Token-encoder package (M1R--M0), composite & +0.0234 & 0.0002 & +0.0149 & 0.0013\\
 Mass axis (M1--M1R), one-factor & +0.0268 & 0.0049 & +0.0142 & 0.0004\\
-Aggregation (M2--M1), one-factor & +0.0322 & 0.0035 & +0.0179 & 0.0009\\
+Measurement model (M2--M1), composite & +0.0322 & 0.0035 & +0.0179 & 0.0009\\
 Share of M1--M0 assigned numerically to M1R--M0 & 46.7\% & -- & 51.3\% & --\\
 Peaks absorbed at 0.5 Da in held-out spectra & 34.4\% & -- & 23.6\% & --\\
 \bottomrule
@@ -416,7 +447,7 @@ Peaks absorbed at 0.5 Da in held-out spectra & 34.4\% & -- & 23.6\% & --\\
 
 The metadata correction also appears on both corpora: supplying acquisition covariates to M0 improves macro AUPRC by $+0.0288$ on the primary corpus and $+0.0142$ on the sensitivity corpus. The larger gain in the more heterogeneous corpus is consistent with acquisition context becoming more valuable as experimental conditions diversify, but with two corpora this is an observation, not a tested relation.
 
-\hd{7. Peak absorption quantifies what coarse binning removes}
+\hd{8. Peak absorption quantifies what coarse binning removes}
 On the primary corpus's held-out spectra, $23.6\%$ of the $3{,}797{,}166$ peaks fall into a $0.5$~Da bin already occupied by another peak from the same spectrum and are therefore absorbed. The corresponding fraction on the sensitivity corpus's held-out spectra is $34.4\%$. At $0.01$~Da the reported held-out absorption fractions fall to $2.9\%$ and $6.5\%$ respectively. Absorption is reported throughout on each corpus's own held-out spectra; the same quantity computed over all retained spectra is $37.5\%$ rather than $34.4\%$ on the sensitivity corpus, and we quote the held-out figure because it matches the set on which the effects are measured.
 
 A merged peak also loses compositional discrimination: enumerating plausible CHNOS compositions within $10$~ppm places $328$ candidate fragment formulae inside a single $0.5$~Da bin at $\mz=300$, consistent with the dependence of formula ambiguity on mass tolerance described by Kind and Fiehn \cite{kind2007seven}.
@@ -430,7 +461,7 @@ The corpus that loses more peaks at $0.5$~Da is also the corpus in which the mas
 \label{fig:absorption}
 \end{figure}
 
-\hd{8. The bin-width sweep suggests, but does not establish, a precision threshold}
+\hd{9. The bin-width sweep suggests, but does not establish, a precision threshold}
 On the sensitivity corpus, the single-seed sweep gives macro AUPRC values of $0.0867$ at $0.5$~Da, $0.0818$ at $0.25$~Da, $0.0801$ at $0.1$~Da, $0.0909$ at $0.05$~Da, $0.1030$ at $0.01$~Da and $0.1119$ at full precision (Table~\ref{tab:sweep}). The non-monotonic values at $0.25$ and $0.1$~Da are compatible with training noise in a single run and should not be read as evidence that coarser grids are better. The $0.01$~Da model closes approximately $65\%$ of the $0.5$~Da-to-full-precision gap. Because each intermediate width was run once and on one corpus, the apparent transition below $0.05$~Da is exploratory rather than a transferable threshold.
 
 \begin{table}[ht]
@@ -462,13 +493,16 @@ reported metric.
 
 \begin{table}[ht]
 \centering
-\caption{Scaffold-cluster bootstrap on the primary corpus: $2{,}000$ draws over the
+\caption{Scaffold-cluster bootstrap on the primary corpus, against the untuned
+dense baseline: $2{,}000$ draws over the
 $3{,}784$ scaffold clusters partitioning the $10{,}058$ held-out structures, with
 macro AUPRC recomputed per arm and contrasts formed within each draw. The bootstrap
 mean is shown beside the point estimate so that centring can be judged directly.
-The two single-factor interventions centre to within $0.0009$; the composite
-contrasts carry an upward bias of $+0.0026$ to $+0.0073$, and their intervals
-should be read as locating a range rather than as centred on the estimate.}
+The two contrasts whose arms share the peak encoder and the
+peak-pooling rule centre to within $0.0009$; every contrast whose arms differ in
+peak pooling or in network family carries an upward bias of $+0.0026$ to
+$+0.0073$, and those intervals should be read as locating a range rather than as
+centred on the estimate.}
 \label{tab:scaffold}
 \small
 \begin{tabular}{llrrrr}
@@ -479,7 +513,7 @@ M1D $-$ M0 & composite & +0.0172 & +0.0198 & 0.0057 & [+0.0123, +0.0317]\\
 M1R $-$ M1D & composite & $-$0.0023 & +0.0011 & 0.0048 & [$-$0.0051, +0.0105]\\
 M1R $-$ M0 & composite & +0.0149 & +0.0209 & 0.0096 & [+0.0089, +0.0377]\\
 M1 $-$ M1R & one-factor & +0.0142 & +0.0151 & 0.0028 & [+0.0108, +0.0216]\\
-M2 $-$ M1 & one-factor & +0.0179 & +0.0183 & 0.0026 & [+0.0142, +0.0242]\\
+M2 $-$ M1 & composite & +0.0179 & +0.0183 & 0.0026 & [+0.0142, +0.0242]\\
 M1 $-$ M0 & composite & +0.0291 & +0.0360 & 0.0116 & [+0.0213, +0.0557]\\
 M2 $-$ M0 & composite & +0.0470 & +0.0543 & 0.0133 & [+0.0370, +0.0765]\\
 \bottomrule
@@ -487,23 +521,24 @@ M2 $-$ M0 & composite & +0.0470 & +0.0543 & 0.0133 & [+0.0370, +0.0765]\\
 \end{table}
 
 Two features of this table bear on how the paper's claims should be read. First,
-the mass-axis intervention and the aggregation intervention are well behaved under
-resampling of structures: their bootstrap means sit within $0.0009$ and $0.0004$ of
-their point estimates, their standard deviations are the smallest in the table, and
-their intervals exclude zero comfortably. Second, every composite contrast is
-biased upward, by more the more components it bundles --- $+0.0026$ for
+the two contrasts measured inside a fixed peak encoder and a fixed peak-pooling
+rule --- the mass-axis intervention and the measurement model --- are well behaved
+under resampling of structures: their bootstrap means sit within $0.0009$ and
+$0.0004$ of their point estimates, their standard deviations are the smallest in
+the table, and their intervals exclude zero comfortably. Second, every contrast
+whose arms differ in peak pooling or in network family is biased upward, and by
+more the further apart the arms are --- $+0.0034$ for M1R~$-$~M1D, $+0.0026$ for
 M1D~$-$~M0, $+0.0060$ for M1R~$-$~M0 and $+0.0073$ for M2~$-$~M0. Resampling with
-replacement duplicates structures, which sharpens macro AUPRC, and that sharpening
-cancels between arms that rank similarly and does not cancel between a dense
-perceptron and a Transformer. The composite contrasts are therefore less stable
-under this resampling than the single-factor ones, which is consistent with the
-reading given to them throughout.
+replacement duplicates structures, which sharpens macro AUPRC; that sharpening
+cancels only between arms that rank molecules similarly. Contrasts across
+architectures are therefore less stable under this resampling than contrasts
+inside one, which is consistent with the reading given to them throughout.
 
 The one interval that changes an interpretation is M1R~$-$~M1D. Its
 target-resampling interval, $[-0.0066, +0.0020]$, contains zero; its
 scaffold-cluster interval, $[-0.0051, +0.0105]$, also contains zero but is
 displaced upward. Neither supports a claim in either direction, which is the
-conclusion already drawn in Sect.~4 for independent reasons.
+conclusion already drawn in Sect.~\ref{sec:attn} for independent reasons.
 
 These intervals are wider than the target-resampling intervals, as expected: they carry variability from which structures were held out, which the target bootstrap holds fixed by construction. Neither is a confidence interval for the population of MS/MS tasks. Reported together with the seed standard deviations, they say that the mass-axis intervention is reproducible across all three sources, and that the ordering of the mass-axis and token-encoder-package increments is not.
 
@@ -525,7 +560,7 @@ The remaining $+0.0149$ should not be described as an encoder effect. M1R and M0
 
 The attention-free sensitivity arm supports a similarly narrow reading. M1R does not outperform M1D, but the arms differ in pooling and feed-forward width in addition to the attention operator. The experiment shows that the tested Transformer-style attention-bearing configuration is not necessary to obtain the rounded-token performance observed here; it does not identify the isolated effect of self-attention, and we have specified the ablation that would.
 
-These distinctions matter because the purpose of the study is attribution. When representation, interface, architecture, pooling and metadata availability move together, a performance increment belongs to the whole package unless the design contains an intervention that changes only one component. The rounding control satisfies that requirement for mass-axis precision; the aggregation arm satisfies it for the tested aggregation module. The metadata correction establishes a separate and practically important point: comparator \emph{inputs} can account for a performance difference as large as the modelling changes being studied.
+These distinctions matter because the purpose of the study is attribution. When representation, interface, architecture, pooling and metadata availability move together, a performance increment belongs to the whole package unless the design contains an intervention that changes only one component. The rounding control satisfies that requirement for mass-axis precision, and it is the only contrast here that does. The measurement-model arm does not: about half of its increment appears on molecules represented by a single spectrum, where there is nothing to aggregate, so it bundles a change of output head with the change of pooling rule. The metadata correction establishes a separate and practically important point: comparator \emph{inputs} can account for a performance difference as large as the modelling changes being studied.
 
 \hd{Relation to other work}
 The systems this work sits alongside are not benchmarked here, and could not be without a different study design. CSI:FingerID \cite{duhrkop2015csifingerid}, MIST \cite{goldman2023mist}, DreaMS \cite{bushuiev2025dreams}, MS2DeepScore \cite{huber2021ms2deepscore} and TransExION \cite{buithi2024transexion} differ from this work and from one another in training corpus, prediction target, objective and architecture; a macro AUPRC over BRICS fragments is not comparable to a retrieval rank or a similarity score. This study therefore does not establish why any of them outperforms its own baseline.
@@ -555,7 +590,7 @@ describes the estimator rather than the experiment run here.
 
 \emph{Scope.} The endpoint is BRICS substructure prediction over 512 frequent fragments, not candidate ranking, full molecular fingerprints or de-novo structure elucidation. The conclusions do not establish performance in candidate retrieval or structure elucidation, and transfer to those endpoints remains to be demonstrated.
 
-\emph{Reproducibility.} The primary corpus is assembled from openly licensed sources and its selection is scripted, but the in-house sensitivity corpus is not redistributable, so that arm of the study cannot be reproduced by a third party from public data.
+\emph{Reproducibility.} The primary corpus is assembled from public sources and its selection is scripted, although the aggregated file carries no per-record licence field, so redistributability cannot be established record by record, but the in-house sensitivity corpus is not redistributable, so that arm of the study cannot be reproduced by a third party from public data.
 
 \section*{Conclusion}
 
@@ -567,7 +602,8 @@ the treatment. On the primary corpus an unconditioned $0.5$~Da binned baseline
 trails the peak-token model by $+0.0579$ macro AUPRC. Supplying the baseline with
 collision energy, adduct, polarity and instrument raises it from $0.1130$ to
 $0.1418$. Giving it a prespecified hyperparameter search of its own raises it to
-$0.2601 \pm 0.0008$, above every peak-token arm in every seed. We draw no conclusion
+$0.2601 \pm 0.0008$, above every peak-token arm in every seed and by $0.07$ to
+$0.10$ macro AUPRC, with target-resampling intervals that exclude zero throughout. We draw no conclusion
 about which representation is better: the tuned baseline is not capacity matched and
 the peak-token arms have not been searched. We draw the conclusion that this
 comparison does not determine an ordering.
@@ -612,6 +648,7 @@ X.P. designed the study, implemented the models and controls, performed the expe
 Not applicable.
 
 \section*{Availability of data and materials}
+\sloppy
 \emph{Code.} All code, configurations, trained-run reports and analysis scripts are available at \url{https://github.com/xulinpan/cheminformatics} under the MIT licence. The two controls are additionally released as \texttt{msms-controls}, a NumPy-only library under the MIT licence, so that the rounding control and the conditioning-parity check can be applied to other models without installing this project's training stack. Results in this paper correspond to a tagged release of that repository. A DOI-bearing archive of that release has not yet been deposited, so no persistent identifier is quoted here.\todoarchive
 
 \emph{Environment.} \texttt{requirements-lock.txt} pins every dependency at the versions used for the reported runs (PyTorch 2.11.0+cu128, Python 3.14, NumPy 2.4.4, pandas 2.3.3, RDKit 2026.3.6, pyarrow 24.0.0), and \texttt{pyproject.toml} declares the supported ranges. Continuous integration runs the test suites on Python 3.10--3.13.
@@ -624,6 +661,7 @@ Not applicable.
 
 \emph{Sensitivity corpus.} The in-house libraries in the CASMI aggregate are not redistributable and are not used in the primary experiments. The sensitivity corpus drawn from them cannot be reproduced by a third party, and no conclusion in this paper rests on it alone.
 
+\fussy
 \section*{Declarations}
 \hd{Competing interests} The authors declare no competing interests.
 
