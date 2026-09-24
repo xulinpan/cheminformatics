@@ -187,7 +187,7 @@ All arms were implemented for this study in PyTorch 2.11.0 (CUDA 12.8) under Pyt
 \hd{Hyperparameter selection, and a known asymmetry}
 No hyperparameter search was performed for any arm. This is not a symmetric choice and we state it plainly: the schedule above was selected for the peak-token Transformer and inherited unchanged by the dense baseline, so M0 and the token arms are not equidistant from their respective optima. Because the central claim of this paper concerns comparator fairness, a comparator that is merely untuned is a weaker instrument than the argument requires. The metadata correction reported below, worth more than any contrast in the study, is direct evidence that M0 was not near its ceiling.
 
-We therefore prespecify a modest M0-only tuning experiment. The scaffold split is fixed and unchanged; folds 2--4 are used for fitting and fold 1 for model selection; fold 0 is not consulted at any point during selection. The grid varies learning rate $\in\{3\times10^{-4}, 10^{-3}, 3\times10^{-3}\}$, hidden width $\in\{256, 512, 1024\}$ and dropout $\in\{0.1, 0.3\}$, all other settings held at the values above. The configuration with the best fold-1 macro AUPRC is then trained under the three seeds and evaluated once on fold 0. The purpose is to test whether the residual M1R-to-M0 difference survives a stronger dense comparator; if the tuned baseline changes the decomposition, every contrast involving M0 must be recomputed and reported against the tuned baseline, and the contrasts not involving M0 --- M1-to-M1R and M2-to-M1 --- are unaffected by construction. The experiment was run and its outcome is reported in Sect.~\ref{sec:tuned}; we retain the design here in the prospective form in which it was fixed.
+We therefore prespecify a modest M0-only tuning experiment. The scaffold split is fixed and unchanged; folds 2--4 are used for fitting and fold 1 for model selection; fold 0 is not consulted at any point during selection. The grid varies learning rate $\in\{3\times10^{-4}, 10^{-3}, 3\times10^{-3}\}$, hidden width $\in\{256, 512, 1024\}$ and dropout $\in\{0.1, 0.3\}$, all other settings held at the values above. The configuration with the best fold-1 macro AUPRC is then trained under the three seeds and evaluated once on fold 0. The purpose is to test whether the residual M1R-to-M0 difference survives a stronger dense comparator; if the tuned baseline changes the decomposition, every contrast involving M0 must be recomputed and reported against the tuned baseline, and the contrasts not involving M0 --- M1-to-M1R and M2-to-M1 --- are unaffected by construction. The experiment was run and its outcome is reported in Sect.~\ref{sec:tuned}; the design is stated here in the prospective form in which it was fixed, before that outcome was known.
 
 Selection runs evaluate the validation fold only. The driver refuses to proceed if a
 selection run has produced a held-out score, so the search cannot be contaminated by
@@ -195,8 +195,14 @@ fold 0 even accidentally. As a check that the grid does what it claims, it
 reproduces the incumbent configuration's validation score exactly at the
 incumbent's own settings.
 
-\hd{A matched search for the peak-token arms}
-Tuning one side of a contrast and not the other reverses an unfairness rather than
+\hd{Two experiments this design calls for and does not report}
+The design above implies two further experiments. Neither was performed for this
+paper and no quantity reported here rests on either. We specify both because a
+reader is entitled to see what the present design cannot settle, and because each
+bounds a claim made below.
+
+\emph{A matched search for the peak-token arms.} Tuning one side of a contrast and
+not the other reverses an unfairness rather than
 removing it. The same grid is therefore specified for M1R, with the width axis
 mapped to the knob that carries capacity in that arm --- the feed-forward width of
 the peak-token blocks --- and $d_{\mathrm{model}}$ held at $128$ so that the
@@ -209,8 +215,7 @@ reported in Sect.~\ref{sec:tuned}. Its result is not reported here.
 replaces the tuned-baseline-against-untuned-treatment comparison of
 Sect.~\ref{sec:tuned}, and that section's reading must be re-derived from it.}
 
-\hd{An exact attention ablation}
-For the same reason, the M1D-to-M1R contrast reported below is not the experiment that would price self-attention. That experiment holds the input, the peak-pooling rule, the feed-forward width, the parameter count as closely as the operator allows, and the training protocol fixed on both sides, and toggles only the self-attention operator; in particular the attention-bearing arm must use masked-mean peak pooling rather than a learned token, so that the pooling rule does not change with the operator. That experiment is specified but not performed here, and no quantity in this paper prices self-attention.
+\emph{An exact attention ablation.} The M1D-to-M1R contrast reported below does not price self-attention either, though for a different reason: its arms differ in three respects at once rather than in the effort spent on them. The experiment that would price the operator holds fixed the input, the peak-pooling rule, the feed-forward width, the training protocol, and the parameter count as closely as the operator allows, and toggles self-attention alone. In particular the attention-bearing arm must pool peaks by a masked mean rather than by a learned token, so that the pooling rule does not change with the operator. No quantity in this paper prices self-attention.
 
 \todoexp{Run the exact attention ablation. Until it exists, no difference reported in
 this paper may be described as an attention effect.}
