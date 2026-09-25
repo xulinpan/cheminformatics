@@ -216,8 +216,8 @@ It is the comparison on which Sect.~\ref{sec:tuned} rests.
 \hd{An exact attention ablation, which this study specifies and does not run}
 The M1D-to-M1R contrast reported below does not price self-attention: its arms differ in the attention operator, the peak-pooling rule and the feed-forward width at once. The experiment that would price the operator holds fixed the input, the peak-pooling rule, the feed-forward width, the training protocol, and the parameter count as closely as the operator allows, and toggles self-attention alone. In particular the attention-bearing arm must pool peaks by a masked mean rather than by a learned token, so that the pooling rule does not change with the operator. No quantity in this paper prices self-attention.
 
-\todoexp{Run the exact attention ablation. Until it exists, no difference reported in
-this paper may be described as an attention effect.}
+\todoexp{Run the exact attention ablation and let it replace the M1D-to-M1R
+contrast of Sect.~\ref{sec:attn}, which prices a package rather than an operator.}
 
 \hd{Evaluation and three sources of uncertainty}
 Macro AUPRC is reported over targets with at least five held-out positives. Three distinct sources of variability bear on the contrasts, and we report them separately rather than combining them into one interval.
