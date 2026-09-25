@@ -69,12 +69,12 @@ binned baselines is not robust to how the comparator is built}
 
 \subsection*{Abstract}
 \small
-Machine-learning methods for tandem mass spectrometry (MS/MS) increasingly replace binned intensity vectors with models reading individual peaks at full mass precision, and gains over binned baselines are often read as evidence for the richer representation. Such comparisons also change the encoder, the pooling rule, the acquisition information supplied and the effort spent on each arm. We separate these sources in MS/MS substructure prediction on a corpus of $414{,}992$ spectra drawn from the public GNPS, MassBank and MoNA libraries and spanning $66$ instrument types. Across $10{,}058$ held-out molecules and three seeds, an unconditioned binned baseline trails a full-precision peak-token model by $+0.0579$ macro AUPRC. Two interventions on the comparator alone remove that gap. Supplying the binned baseline with the acquisition covariates the peak-token arms already received raises it from $0.1130$ to $0.1418$. A prespecified search of its own, selected on the validation fold and never consulting fold 0, raises it to $0.2601 \pm 0.0008$ --- above every peak-token arm in every seed. Tuning is worth $+0.1183$, four times the metadata correction and more than every modelling effect here combined; its selected configuration sits on the grid boundary, so it is a lower bound. Contrasts not involving the baseline are unaffected: inside a fixed encoder, restoring full mass precision contributes $+0.0142$ ($95\%$ interval $+0.0097$ to $+0.0187$), the study's one single-factor intervention. We do not conclude that binned representations are superior --- the tuned baseline carries $6.2\times$ the parameters and the peak-token arms are untuned --- but that no ordering follows from a comparison of this kind, and that comparator construction must be controlled before a representation gain is attributed.
+Machine-learning methods for tandem mass spectrometry (MS/MS) increasingly replace binned intensity vectors with models reading individual peaks at full mass precision, and gains over binned baselines are often read as evidence for the richer representation. Such comparisons also change the encoder, the pooling rule, the acquisition information supplied and the effort spent on each arm. We separate these sources in MS/MS substructure prediction on a corpus of $414{,}992$ spectra drawn from the public GNPS, MassBank and MoNA libraries and spanning $66$ instrument types. Across $10{,}058$ held-out molecules and three seeds, an unconditioned binned baseline trails a full-precision peak-token model by $+0.0579$ macro AUPRC. Two interventions on the comparator alone remove that gap. Supplying the binned baseline with the acquisition covariates the peak-token arms already received raises it from $0.1130$ to $0.1418$. A prespecified search of its own, selected on the validation fold and never consulting fold 0, raises it to $0.2601 \pm 0.0008$, worth $+0.1183$ --- four times the metadata correction and more than every modelling effect here combined. The same grid run on the peak-token arm is worth $+0.0006$, an interval straddling zero on two resamplings, and selects the configuration that arm already had. Searched against searched, the binned baseline leads by $0.1028$ ($-0.1164$ to $-0.0898$ over targets), negative in all three seeds. Contrasts not involving the baseline are unaffected: inside a fixed encoder, restoring full mass precision contributes $+0.0142$ ($+0.0097$ to $+0.0187$), the study's one single-factor intervention. We do not conclude that binned representations are superior, since the tuned baseline carries $6.2\times$ the parameters; we conclude that the apparent advantage was a property of how the comparator was built, and that comparator construction must be controlled before a representation gain is attributed.
 \normalsize
 
 \hd{Scientific contribution}
 \small
-We provide three controls for attributing gains in MS/MS representation studies: metadata parity between comparators, a prespecified per-arm hyperparameter search, and a rounding control varying mass-axis precision inside a fixed peak-token encoder. On one five-arm ladder the first two together eliminate the apparent advantage of a full-precision peak-token model over a binned baseline, while the third isolates a mass-axis effect of $+0.0142$ that survives because no baseline enters it. The contribution is methodological: a reported gain of this kind can be an artefact of comparator construction rather than of representation.
+We provide three controls for attributing gains in MS/MS representation studies: metadata parity between comparators, a prespecified per-arm hyperparameter search applied to both sides rather than one, and a rounding control varying mass-axis precision inside a fixed peak-token encoder. On one five-arm ladder the first two together eliminate the apparent advantage of a full-precision peak-token model over a binned baseline --- and the search is worth $+0.1183$ to the comparator against $+0.0006$ to the treatment, so the asymmetry is measured rather than assumed --- while the third isolates a mass-axis effect of $+0.0142$ that survives because no baseline enters it. The contribution is methodological: a reported gain of this kind can be an artefact of comparator construction rather than of representation.
 \normalsize
 
 \hd{Keywords}
@@ -191,10 +191,10 @@ Every arm was trained for 15 epochs with AdamW, a one-cycle learning-rate schedu
 
 All arms were implemented for this study in PyTorch 2.11.0 (CUDA 12.8) under Python 3.14, with NumPy 2.4.4, pandas 2.3.3 and RDKit 2026.3.6, and trained on a single NVIDIA RTX 3070. M0 reproduces the binned convention described in the Introduction rather than any particular published system, and no external implementation was used as a comparator; every difference reported here is between arms of one codebase, which is what makes the within-architecture controls necessary rather than optional.
 
-\hd{Hyperparameter selection, and a known asymmetry}
+\hd{Hyperparameter selection, and the searches that make it symmetric}
 No hyperparameter search was performed for any arm. This is not a symmetric choice and we state it plainly: the schedule above was selected for the peak-token Transformer and inherited unchanged by the dense baseline, so M0 and the token arms are not equidistant from their respective optima. Because the central claim of this paper concerns comparator fairness, a comparator that is merely untuned is a weaker instrument than the argument requires. The metadata correction reported below, worth more than any contrast in the study, is direct evidence that M0 was not near its ceiling.
 
-We therefore prespecify a modest M0-only tuning experiment. The scaffold split is fixed and unchanged; folds 2--4 are used for fitting and fold 1 for model selection; fold 0 is not consulted at any point during selection. The grid varies learning rate $\in\{3\times10^{-4}, 10^{-3}, 3\times10^{-3}\}$, hidden width $\in\{256, 512, 1024\}$ and dropout $\in\{0.1, 0.3\}$, all other settings held at the values above. The configuration with the best fold-1 macro AUPRC is then trained under the three seeds and evaluated once on fold 0. The purpose is to test whether the residual M1R-to-M0 difference survives a stronger dense comparator; if the tuned baseline changes the decomposition, every contrast involving M0 must be recomputed and reported against the tuned baseline, and the contrasts not involving M0 --- M1-to-M1R and M2-to-M1 --- are unaffected by construction. The experiment was run and its outcome is reported in Sect.~\ref{sec:tuned}; the design is stated here in the prospective form in which it was fixed, before that outcome was known.
+We therefore prespecify a modest tuning experiment for the dense baseline. The scaffold split is fixed and unchanged; folds 2--4 are used for fitting and fold 1 for model selection; fold 0 is not consulted at any point during selection. The grid varies learning rate $\in\{3\times10^{-4}, 10^{-3}, 3\times10^{-3}\}$, hidden width $\in\{256, 512, 1024\}$ and dropout $\in\{0.1, 0.3\}$, all other settings held at the values above. The configuration with the best fold-1 macro AUPRC is then trained under the three seeds and evaluated once on fold 0. The purpose is to test whether the residual M1R-to-M0 difference survives a stronger dense comparator; if the tuned baseline changes the decomposition, every contrast involving M0 must be recomputed and reported against the tuned baseline, and the contrasts not involving M0 --- M1-to-M1R and M2-to-M1 --- are unaffected by construction. The design is stated here in the prospective form in which it was fixed, before the outcome was known.
 
 Selection runs evaluate the validation fold only. The driver refuses to proceed if a
 selection run has produced a held-out score, so the search cannot be contaminated by
@@ -202,27 +202,19 @@ fold 0 even accidentally. As a check that the grid does what it claims, it
 reproduces the incumbent configuration's validation score exactly at the
 incumbent's own settings.
 
-\hd{Two experiments this design calls for and does not report}
-The design above implies two further experiments. Neither was performed for this
-paper and no quantity reported here rests on either. We specify both because a
-reader is entitled to see what the present design cannot settle, and because each
-bounds a claim made below.
+A search on one side of a contrast and not the other reverses an unfairness
+rather than removing it, so the same grid was then run on the peak-token side. The
+width axis maps to the knob that carries capacity in that arm --- the feed-forward
+width of the peak-token blocks --- with $d_{\mathrm{model}}$ held at $128$ so that
+the representation width is unchanged and the search varies capacity rather than
+the interface. Learning rate and dropout ranges are identical, selection is again
+on fold 1, and fold 0 is again not consulted. We call the resulting arm M1RT, and
+the M1RT-to-M0T contrast is the tuned-against-tuned comparison: both sides searched
+over the same grid, on the same folds, with the held-out fold consulted by neither.
+It is the comparison on which Sect.~\ref{sec:tuned} rests.
 
-\emph{A matched search for the peak-token arms.} Tuning one side of a contrast and
-not the other reverses an unfairness rather than
-removing it. The same grid is therefore specified for M1R, with the width axis
-mapped to the knob that carries capacity in that arm --- the feed-forward width of
-the peak-token blocks --- and $d_{\mathrm{model}}$ held at $128$ so that the
-representation width is unchanged and the search varies capacity rather than the
-interface. Learning rate and dropout ranges are identical, selection is on fold 1,
-and fold 0 is not consulted. This is the experiment that would settle the comparison
-reported in Sect.~\ref{sec:tuned}. Its result is not reported here.
-
-\todoexp{Run the matched search. The tuned-against-tuned comparison it yields
-replaces the tuned-baseline-against-untuned-treatment comparison of
-Sect.~\ref{sec:tuned}, and that section's reading must be re-derived from it.}
-
-\emph{An exact attention ablation.} The M1D-to-M1R contrast reported below does not price self-attention either, though for a different reason: its arms differ in three respects at once rather than in the effort spent on them. The experiment that would price the operator holds fixed the input, the peak-pooling rule, the feed-forward width, the training protocol, and the parameter count as closely as the operator allows, and toggles self-attention alone. In particular the attention-bearing arm must pool peaks by a masked mean rather than by a learned token, so that the pooling rule does not change with the operator. No quantity in this paper prices self-attention.
+\hd{One experiment this design calls for and does not report}
+\emph{An exact attention ablation.} The M1D-to-M1R contrast reported below does not price self-attention: its arms differ in the attention operator, the peak-pooling rule and the feed-forward width at once. The experiment that would price the operator holds fixed the input, the peak-pooling rule, the feed-forward width, the training protocol, and the parameter count as closely as the operator allows, and toggles self-attention alone. In particular the attention-bearing arm must pool peaks by a masked mean rather than by a learned token, so that the pooling rule does not change with the operator. No quantity in this paper prices self-attention.
 
 \todoexp{Run the exact attention ablation. Until it exists, no difference reported in
 this paper may be described as an attention effect.}
@@ -282,7 +274,7 @@ M2 & full precision & tokens, attn.\ & learned token & meas.\ model & 829,584 & 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.93\linewidth]{figure1_arm_means.pdf}
-\caption{Held-out macro AUPRC for the five arms on the primary corpus. Large markers are three-seed means, small markers the individual seeds. The seeds are shown because two of the increments compared below cannot be ordered: their difference changes sign across these runs.}
+\caption{Held-out macro AUPRC for the five arms on the primary corpus. Large markers are three-seed means, small markers the individual seeds. The seeds are shown because two of the increments compared below cannot be ordered: their difference changes sign across these runs. The searched arms M0T and M1RT of Sect.~\ref{sec:tuned} are not shown here; Table~\ref{tab:tuned} gives them.}
 \label{fig:arms}
 \end{figure}
 
@@ -362,7 +354,7 @@ Eqs.~(7)--(8) do not require, and probably understates what the pooling contribu
 
 It exceeds the M1R-to-M0 package in all three seeds by $+0.0009$, $+0.0030$ and $+0.0049$, and the mass-axis intervention in all three by $+0.0028$, $+0.0045$ and $+0.0037$; the same direction against the package holds in all three seeds on the sensitivity corpus. With three seeds per corpus we treat this as a consistent empirical ordering in these runs rather than an established general ranking. Its relevance to the paper's argument is that a component with nothing to do with spectral representation produces an effect of the same magnitude as the representation change being studied.
 
-\hd{6. A tuned comparator removes the advantage entirely}
+\hd{6. Searching both arms over the same grid leaves the binned baseline ahead}
 \hdlab{6}{sec:tuned}
 The search prespecified in Methods was run: 18 configurations, fitted on folds 2--4,
 selected on fold 1, fold 0 never consulted. The grid reproduced the incumbent's
@@ -370,54 +362,82 @@ validation score exactly at the incumbent's settings ($0.1702$), and selected
 $\mathrm{lr}=3\times10^{-3}$, hidden width $1024$, dropout $0.3$ at a validation
 score of $0.2933$. Retrained under the three seeds and evaluated once on fold 0, the
 tuned baseline reaches $0.2601 \pm 0.0008$ against the untuned $0.1418$
-(Table~\ref{tab:tuned}).
+(Table~\ref{tab:tuned}). Tuning the comparator was worth $+0.1183$ ($+0.1051$ to
+$+0.1312$, improving $87.3\%$ of targets), four times the metadata correction and
+larger than every modelling effect in this study combined.
 
-Every peak-token arm now sits below the dense baseline, in all three seeds:
-$-0.1011$ for M1D, $-0.1033$ for M1R, $-0.0892$ for M1 and $-0.0713$ for M2. Paired
-over targets, each of those differences excludes zero by a wide margin
-(Table~\ref{tab:tuned}), with the peak-token arm ahead on $21.9\%$, $21.5\%$,
-$29.1\%$ and $32.3\%$ of scored targets respectively. Tuning was worth $+0.1183$
-($+0.1051$ to $+0.1312$, improving $87.3\%$ of targets), four times the metadata
-correction and larger than every modelling effect in this study combined.
+The same grid was then run on the peak-token side, with the width axis mapped to
+the feed-forward width as specified in Methods: again 18 configurations, again
+selected on fold 1, again with fold 0 never consulted. It selected
+$\mathrm{lr}=10^{-3}$, feed-forward width $256$, dropout $0.1$ at a validation score
+of $0.2026$ --- which is M1R's incumbent configuration, the settings the arm already
+had. Retrained under the three seeds, the tuned arm M1RT reaches $0.1573 \pm 0.0036$
+against the untuned $0.1567 \pm 0.0025$. The matched search was therefore worth
+$+0.0006$: an interval of $-0.0017$ to $+0.0029$ over targets and $-0.0019$ to
+$+0.0041$ over scaffold clusters, $52.2\%$ of targets improved, and the sign
+changing across seeds. Nothing measurable.
+
+The tuned-against-tuned comparison is accordingly where the untuned one already
+was. M1RT minus M0T is $-0.1028$ ($-0.1164$ to $-0.0898$ over targets, $-0.1088$ to
+$-0.0874$ over scaffold clusters), negative in all three seeds, with the peak-token
+arm ahead on $21.9\%$ of scored targets. The remaining arms sit below the tuned
+baseline by $-0.1011$, $-0.0892$ and $-0.0713$, every interval excluding zero
+(Table~\ref{tab:tuned}). Both sides have now been searched over the same grid, on
+the same folds, with the held-out fold consulted by neither, and the ordering does
+not move.
 
 \begin{table}[ht]
 \centering
-\caption{The dense baseline before and after the prespecified search, and the
-contrasts recomputed against it. Selection used fold 1 only. Intervals are $95\%$
-target-resampling intervals, computed from the saved held-out predictions by the
-same procedure as Table~\ref{tab:contrasts}. The tuned
-configuration sits on the boundary of the grid in both learning rate and width, so
-$0.2601$ is a lower bound on what a fully searched dense baseline reaches. The
-incumbent configuration is lr $10^{-3}$, width $256$, dropout $0.1$; the selected one
-is lr $3\times10^{-3}$, width $1024$, dropout $0.3$.}
+\caption{Both arms after their own search over the same grid, and the contrasts
+that follow. Selection used fold 1 only, on both sides. The dense baseline's
+selected configuration is lr $3\times10^{-3}$, width $1024$, dropout $0.3$, on the
+boundary of the grid in both axes, so $0.2601$ is a lower bound on what a fully
+searched dense baseline reaches; the peak-token arm's selected configuration is lr
+$10^{-3}$, feed-forward width $256$, dropout $0.1$, which is the configuration it
+already had. Intervals are $95\%$ target-resampling and scaffold-cluster intervals,
+computed from the saved held-out predictions by the procedures of
+Table~\ref{tab:contrasts} and Table~\ref{tab:scaffold}.}
 \label{tab:tuned}
-\small
-\begin{tabular}{lrrrrl}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrr}
 \toprule
- & Parameters & Macro AUPRC & Seed SD & vs tuned & 95\% interval\\
+Arm & Parameters & Macro AUPRC & Seed SD\\
 \midrule
-M0, untuned & 1,172,752 & 0.1418 & 0.0013 & $-$0.1183 & [$-$0.1312, $-$0.1051]\\
-M0, tuned & 4,442,128 & 0.2601 & 0.0008 & --- & ---\\
+M0, untuned & 1,172,752 & 0.1418 & 0.0013\\
+M0T, tuned dense baseline & 4,442,128 & 0.2601 & 0.0008\\
+M1R, untuned & 712,336 & 0.1567 & 0.0025\\
+M1RT, tuned peak-token arm & 712,336 & 0.1573 & 0.0036\\
+M1D & 714,528 & 0.1590 & 0.0024\\
+M1 & 712,336 & 0.1709 & 0.0022\\
+M2 & 829,584 & 0.1888 & 0.0015\\
+\bottomrule
+\end{tabular}
+
+\vspace{8pt}
+\begin{tabular}{llrll}
+\toprule
+Contrast & Isolates & $\Delta$ AUPRC & 95\% target & 95\% scaffold\\
 \midrule
-M1D & 714,528 & 0.1590 & 0.0024 & $-$0.1011 & [$-$0.1138, $-$0.0888]\\
-M1R & 712,336 & 0.1567 & 0.0025 & $-$0.1033 & [$-$0.1170, $-$0.0904]\\
-M1 & 712,336 & 0.1709 & 0.0022 & $-$0.0892 & [$-$0.1027, $-$0.0756]\\
-M2 & 829,584 & 0.1888 & 0.0015 & $-$0.0713 & [$-$0.0843, $-$0.0584]\\
+M0T $-$ M0 & tuning the comparator & +0.1183 & [+0.1051, +0.1312] & [+0.1099, +0.1351]\\
+M1RT $-$ M1R & tuning the treatment & +0.0006 & [$-$0.0017, +0.0029] & [$-$0.0019, +0.0041]\\
+M1RT $-$ M0T & tuned against tuned & $-$0.1028 & [$-$0.1164, $-$0.0898] & [$-$0.1088, $-$0.0874]\\
+\midrule
+M1R $-$ M0T & untuned treatment & $-$0.1033 & [$-$0.1167, $-$0.0901] & [$-$0.1089, $-$0.0890]\\
+M1D $-$ M0T & untuned treatment & $-$0.1011 & [$-$0.1138, $-$0.0881] & [$-$0.1098, $-$0.0945]\\
+M1 $-$ M0T & untuned treatment & $-$0.0892 & [$-$0.1028, $-$0.0760] & [$-$0.0953, $-$0.0717]\\
+M2 $-$ M0T & untuned treatment & $-$0.0713 & [$-$0.0848, $-$0.0584] & [$-$0.0779, $-$0.0513]\\
 \bottomrule
 \end{tabular}
 \end{table}
 
 Three things must be said about what this does and does not show.
 
-It is not evidence that binned representations are superior. The tuned baseline
-carries $6.2\times$ M1R's parameters, so the comparison is not capacity matched, and
-the peak-token arms have not been tuned at all. The original design was unfair to
-the baseline; this one is unfair to the treatment, in mirror image. The matched
-search specified in Methods is the experiment that would settle it, and its result is
-not reported here.
-
-\todoexp{Re-derive this section from the matched search when it lands; the reading
-offered here is provisional until then.}
+It is still not evidence that binned representations are superior. The tuned
+baseline carries $6.2\times$ M1RT's parameters, so the comparison is not capacity
+matched, and the grid is modest --- six learning-rate-by-width combinations at two
+dropout rates --- with the baseline's selection on its boundary in both axes. What
+can no longer be said is that the ordering reflects unequal search effort, because
+the effort was equalised and the ordering did not move.
 
 The mechanism is underfitting, not regularisation. The untuned baseline ends training
 at a presence loss of $0.01885$ against the tuned arm's $0.01084$: the tuned model
@@ -433,6 +453,15 @@ hyperparameter, and the learning-rate schedule was likewise selected for the
 treatment's optimisation behaviour. A binned-versus-peak comparison can therefore be
 biased before any data is seen, by inheritance rather than by intent, and this is
 checkable in any codebase in minutes.
+
+The two searches make that inheritance visible rather than inferred. The rate the
+dense baseline selected, $3\times10^{-3}$, is the worst region of the grid for the
+peak-token arm: all six configurations at that rate score between $0.033$ and
+$0.058$ on validation, against $0.2026$ at $10^{-3}$. The width axis says the same
+in reverse --- the dense baseline selects the largest width on the grid and the
+peak-token arm the smallest. A single shared schedule cannot be neutral between two
+arms whose optima sit at opposite corners of it, and the one this study inherited
+was the treatment's.
 
 \hd{7. A contrasting acquisition regime shows a qualitatively similar ordering}
 The same ladder was evaluated on the near-homogeneous sensitivity corpus (Table~\ref{tab:corpora}). All three principal increments are larger there, but the broad pattern is similar: the mass-axis and rounded token-encoder increments are of comparable size, their difference again changes sign across seeds ($-0.0016$, $+0.0006$, $-0.0090$), and aggregation is again substantial. The corresponding share of the M1-to-M0 difference assigned numerically to M1R-to-M0 is $46.7\%$ there against $51.3\%$ here.
@@ -555,12 +584,15 @@ conclusion already drawn in Sect.~\ref{sec:attn} for independent reasons.
 These intervals are wider than the target-resampling intervals, as expected: they carry variability from which structures were held out, which the target bootstrap holds fixed by construction. Neither is a confidence interval for the population of MS/MS tasks. Reported together with the seed standard deviations, they say that the mass-axis intervention is reproducible across all three sources, and that the ordering of the mass-axis and token-encoder-package increments is not.
 
 \section*{Discussion}
-The main result is that a reported advantage of this kind can be an artefact of the comparator. A two-arm comparison between the original unconditioned binned baseline and the full-precision peak-token model yields $+0.0579$ macro AUPRC. Two interventions on the comparator alone, neither touching the treatment, remove it. Supplying the dense baseline with the acquisition covariates the peak-token models already had accounts for $+0.0288$. Giving it its own hyperparameter search accounts for $+0.1183$ more, and reverses the ordering: every peak-token arm then sits below the baseline in every seed.
+The main result is that a reported advantage of this kind can be an artefact of the comparator. A two-arm comparison between the original unconditioned binned baseline and the full-precision peak-token model yields $+0.0579$ macro AUPRC. Two interventions on the comparator alone, neither touching the treatment, remove it. Supplying the dense baseline with the acquisition covariates the peak-token models already had accounts for $+0.0288$. Giving it its own hyperparameter search accounts for $+0.1183$ more, and reverses the ordering: every peak-token arm then sits below the baseline in every seed. The same grid run on the peak-token side does not restore it, being worth $+0.0006$ there, so the reversal is not an artefact of searching one arm only.
 
 Neither intervention is exotic. Metadata parity is a matter of passing the same
 inputs to both sides. A per-arm hyperparameter search is standard practice that was
 simply not applied here, and its omission was not neutral, because the shared
-schedule and the comparator's width both came from the treatment arm. The
+schedule and the comparator's width both came from the treatment arm. Running the
+identical grid on both sides shows how unequal that inheritance was: the learning
+rate the comparator selects is the worst on the grid for the treatment, and the
+width each selects sits at the opposite end from the other's. The
 uncomfortable implication is that a study can satisfy the usual expectations ---
 identical data, identical splits, identical objective, identical training budget,
 three seeds --- and still produce an ordering that inverts under a control it did
@@ -585,7 +617,7 @@ The contrasting corpus changes the acquisition regime substantially, which is wh
 The bin-width sweep is likewise suggestive rather than definitive. It indicates that a $0.01$~Da grid recovers much of, but not all of, the full-precision advantage on the sensitivity corpus. This differs below $0.1$~Da from the result reported by de Jonge et al.\ \cite{dejonge2026cross}. The tasks, architectures and training stochasticity differ, and the present sweep has one seed at each intermediate width, so neither study alone settles a universal sufficient mass resolution.
 
 \hd{Limitations}
-\emph{Experimental design.} Three seeds per ladder arm are sufficient to show the observed seed-to-seed pattern but not to establish rankings among small effects. The dense baseline has now been searched; the peak-token arms have not, so the comparison in Sect.~\ref{sec:tuned} is unfair in the opposite direction to the original and supports no ordering claim. The tuned baseline is also not capacity matched, at $6.2\times$ the parameters of the peak-token arms, and its selected configuration sits on the grid boundary in both axes, so it is a lower bound rather than an optimum. The matched search is specified and incomplete.
+\emph{Experimental design.} Three seeds per ladder arm are sufficient to show the observed seed-to-seed pattern but not to establish rankings among small effects. Both the dense baseline and the peak-token arm have now been searched over the same grid, so the comparison in Sect.~\ref{sec:tuned} is no longer asymmetric in search effort; it remains unmatched in capacity, at $6.2\times$ the parameters, and the grid is modest, with the baseline's selection on its boundary in both axes, so $0.2601$ is a lower bound rather than an optimum. The peak-token arm's search selected the configuration it already had, which is evidence that the arm was near its optimum on this grid but not that a wider grid would leave it there. Only M1R was searched on the peak-token side; M1, M1D and M2 inherit its configuration.
 
 \emph{Inference.} The target-resampling bootstrap does not capture uncertainty in which structures were held out; the scaffold-cluster bootstrap addresses that but holds the target set fixed. BRICS targets are correlated because fragments co-occur, so target-resampling intervals are narrower than fully independent resampling would give. Neither interval covers scaffold-split choice or the population of MS/MS tasks.
 
@@ -615,10 +647,14 @@ trails the peak-token model by $+0.0579$ macro AUPRC. Supplying the baseline wit
 collision energy, adduct, polarity and instrument raises it from $0.1130$ to
 $0.1418$. Giving it a prespecified hyperparameter search of its own raises it to
 $0.2601 \pm 0.0008$, above every peak-token arm in every seed and by $0.07$ to
-$0.10$ macro AUPRC, with target-resampling intervals that exclude zero throughout. We draw no conclusion
-about which representation is better: the tuned baseline is not capacity matched and
-the peak-token arms have not been searched. We draw the conclusion that this
-comparison does not determine an ordering.
+$0.10$ macro AUPRC, with intervals that exclude zero on two independent resamplings.
+Running the identical grid on the peak-token side does not narrow that gap: it is
+worth $+0.0006$ there, an interval straddling zero, and it selects the configuration
+the arm already had, leaving the tuned-against-tuned difference at $-0.1028$. We draw
+no conclusion about which representation is better, because the tuned baseline is not
+capacity matched at $6.2\times$ the parameters. We draw the conclusion that the
+apparent advantage belonged to the comparator's construction rather than to the
+representation.
 
 Second, the contrasts that never involve the comparator are unaffected, and they are
 the ones a within-architecture design was built to protect. Restoring full mass
