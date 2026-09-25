@@ -33,14 +33,21 @@
 % number.
 \definecolor{ednotecol}{rgb}{0.60,0.09,0.09}
 \newif\ifdraftnotes\draftnotestrue
-% the note is set in a minipage so a page break cannot fall between its rules
+% A note is marked by a vertical bar down its left edge, not by rules above and
+% below it. Two notes separated by one paragraph put a horizontal rule above that
+% paragraph and another below it, which made ordinary body text read as boxed. The
+% bar is drawn to the measured height of the note, and the whole note sits in one
+% box, so a page break cannot fall inside it either.
+\newsavebox{\ednbox}
 \newcommand{\ednotebox}[2]{\ifdraftnotes
-  \par\medskip\noindent\begin{minipage}{\linewidth}%
-  \noindent\textcolor{ednotecol}{\rule{\linewidth}{0.4pt}}%
-  \par\nobreak\vspace{3pt}\noindent
-  {\small\color{ednotecol}\textsc{#1.}\ #2\par}%
-  \nobreak\vspace{3pt}\noindent\textcolor{ednotecol}{\rule{\linewidth}{0.4pt}}%
-  \end{minipage}\par\medskip\fi}
+  \par\medskip\noindent
+  \sbox{\ednbox}{\begin{minipage}{\dimexpr\linewidth-16pt\relax}%
+    \small\color{ednotecol}\textsc{#1.}\ #2%
+  \end{minipage}}%
+  \noindent\textcolor{ednotecol}{%
+    \rule[-\dp\ednbox]{2pt}{\dimexpr\ht\ednbox+\dp\ednbox\relax}}%
+  \hspace{14pt}\usebox{\ednbox}%
+  \par\medskip\fi}
 \newcommand{\todoexp}[1]{\ednotebox{Outstanding experiment}{#1}}
 \newcommand{\todoana}[1]{\ednotebox{Outstanding analysis}{#1}}
 \newcommand{\todoarchive}{\ifdraftnotes\ \textcolor{ednotecol}{\small\textsc{[outstanding:
