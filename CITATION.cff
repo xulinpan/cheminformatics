@@ -1,12 +1,20 @@
 cff-version: 1.2.0
 message: "If you use this software or refer to these results, please cite the paper below."
-title: "A metadata-matched binned baseline halves the apparent peak-level advantage in MS/MS substructure prediction"
+title: "Comparator construction can reverse the apparent advantage of peak-token MS/MS models over binned baselines"
 abstract: >-
-  Code and analysis supporting a controlled decomposition of the gain that
-  peak-level models show over binned baselines in MS/MS substructure prediction.
-  A rounding control separates the encoder from the mass axis; on an openly
-  licensed corpus spanning 66 instrument types, 76% of the gain a two-arm
-  comparison credits to the representation is the encoder.
+  Code, analyses and manuscript for a controlled study of how much of a
+  peak-token model's apparent advantage over a binned MS/MS baseline belongs to
+  the comparator rather than to the representation. On a public-source corpus of
+  414,992 spectra from GNPS, MassBank and MoNA spanning 66 instrument types,
+  evaluated on 10,058 scaffold-disjoint held-out structures under three seeds,
+  supplying the binned baseline with the acquisition covariates the peak-token
+  arms already received raises it from 0.1130 to 0.1418 macro AUPRC, and an
+  architecture-specific hyperparameter search raises it to 0.2601, reversing the
+  ordering. The same search budget applied to the peak-token arm's own capacity
+  parameters leaves it at 0.1573. Because the optimised baseline carries 6.2
+  times the parameters, this does not establish that binned representations are
+  superior. Within a fixed peak-token encoder, restoring full mass precision
+  contributes +0.0142, the study's one single-factor intervention.
 authors:
   - family-names: Pan
     given-names: Xulin
@@ -23,5 +31,6 @@ keywords:
   - spectral representation
   - mass defect
   - substructure prediction
-  - metabolite identification
+  - baseline construction
+  - experimental design
 year: 2026
