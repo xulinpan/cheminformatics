@@ -214,7 +214,11 @@ over the same grid, on the same folds, with the held-out fold consulted by neith
 It is the comparison on which Sect.~\ref{sec:tuned} rests.
 
 \hd{An exact attention ablation, which this study specifies and does not run}
-The M1D-to-M1R contrast reported below does not price self-attention: its arms differ in the attention operator, the peak-pooling rule and the feed-forward width at once. The experiment that would price the operator holds fixed the input, the peak-pooling rule, the feed-forward width, the training protocol, and the parameter count as closely as the operator allows, and toggles self-attention alone. In particular the attention-bearing arm must pool peaks by a masked mean rather than by a learned token, so that the pooling rule does not change with the operator. No quantity in this paper prices self-attention.
+The M1D-to-M1R contrast reported below does not price self-attention, and the reason is worth stating because it is a property of the comparison rather than of the measurement. Removing attention forces a second change. M1R pools peaks with a learned token, which is a query that aggregates by attending to them, so an arm without attention cannot use one and M1D pools by a masked mean instead. Removing attention also frees parameters, which were returned as feed-forward width. Three things therefore differ between the two arms at once, and a single measurement cannot be divided among them.
+
+The consequence is not that the estimate is imprecise but that it is uninterpretable in a particular direction: if self-attention helped and masked-mean pooling helped by a similar amount, the two would cancel and the contrast would read as approximately zero --- which is close to what it does read. An interval containing zero is therefore consistent with attention mattering and with attention not mattering, and the design cannot separate the two.
+
+The experiment that would price the operator holds the input, the feed-forward width, the training protocol and the parameter count fixed as closely as the operator allows, and toggles self-attention alone. Its essential feature is that \emph{both} arms pool peaks by a masked mean, so that the pooling rule no longer changes with the operator; the attention-bearing arm gives up its learned token to buy that. No quantity in this paper prices self-attention.
 
 \todoexp{Run the exact attention ablation and let it replace the M1D-to-M1R
 contrast of Sect.~\ref{sec:attn}, which prices a package rather than an operator.}
@@ -329,7 +333,7 @@ enters it.}
 \hdlab{4}{sec:attn}
 M1D minus M0 is $+0.0172$ ($+0.0102$ to $+0.0242$), and M1R minus M1D is $-0.0023$ ($-0.0066$ to $+0.0020$), an interval containing zero, with $54.3\%$ of targets improved and a positive mean in only one seed of three. The attention-bearing rounded-token model is therefore not shown to outperform the approximately capacity-matched attention-free one in this comparison.
 
-We do not read the negative mean as evidence that attention is harmful, and we do not read the result as an attention effect at all: M1D and M1R differ in the attention operator, in peak pooling and in feed-forward width together. The defensible statement is narrow --- the tested attention-bearing configuration was not necessary to reach the rounded-token performance observed here --- and the experiment that would price the operator is specified in Methods and has not been run.
+We do not read the negative mean as evidence that attention is harmful, and we do not read the result as an attention effect at all: M1D and M1R differ in the attention operator, in peak pooling and in feed-forward width together, because an attention-free arm cannot use a learned pooling token. An interval containing zero is what two offsetting effects would also produce, so it is evidence about the package and not about the operator. The defensible statement is narrow --- the tested attention-bearing configuration was not necessary to reach the rounded-token performance observed here --- and the experiment that would price the operator is specified in Methods and has not been run.
 
 \hd{5. The measurement model contributes an additional gain, only part of which is aggregation (\composite)}
 \hdlab{5}{sec:agg}
