@@ -48,11 +48,17 @@ SEEDS = {"2026": "", "7": "_s7", "13": "_s13"}
 
 # M0T is the tuned dense baseline (lr 3e-3, width 1024, dropout 0.3); M0 is the
 # metadata-matched but untuned one every other table in the paper uses.
-CONTRASTS = [("M0T-M0",  "M0T", "M0",  "comparator tuning"),
-             ("M1D-M0T", "M1D", "M0T", "composite"),
-             ("M1R-M0T", "M1R", "M0T", "composite"),
-             ("M1-M0T",  "M1",  "M0T", "composite"),
-             ("M2-M0T",  "M2",  "M0T", "composite")]
+# M1RT is the peak-token arm after its own matched search, so M1RT - M0T is the
+# tuned-against-tuned comparison: both sides searched over the same grid, on the
+# same folds, with fold 0 consulted by neither. It is the contrast that settles
+# Sect. 6. M1RT - M1R measures what the matched search was worth.
+CONTRASTS = [("M0T-M0",   "M0T",  "M0",   "comparator tuning"),
+             ("M1RT-M1R", "M1RT", "M1R",  "treatment tuning"),
+             ("M1RT-M0T", "M1RT", "M0T",  "tuned against tuned"),
+             ("M1D-M0T",  "M1D",  "M0T",  "composite"),
+             ("M1R-M0T",  "M1R",  "M0T",  "composite"),
+             ("M1-M0T",   "M1",   "M0T",  "composite"),
+             ("M2-M0T",   "M2",   "M0T",  "composite")]
 NAMES = [k for k, _, _, _ in CONTRASTS]
 
 
